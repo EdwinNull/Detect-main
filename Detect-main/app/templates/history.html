@@ -1,0 +1,585 @@
+{% extends "base.html" %}
+
+{% block extra_css %}
+<style>
+    .history-container {
+        background: rgba(255, 255, 255, 0.95);
+        backdrop-filter: blur(10px);
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        margin: 0 auto;
+    }
+    
+    .header {
+        text-align: center;
+        margin-bottom: 30px;
+    }
+    
+    .header h1 {
+        color: #333;
+        margin-bottom: 10px;
+        font-size: 28px;
+    }
+    
+    .search-controls {
+        display: flex;
+        gap: 15px;
+        margin-bottom: 20px;
+        align-items: center;
+        flex-wrap: wrap;
+    }
+    
+    .search-input {
+        flex: 1;
+        min-width: 200px;
+        padding: 10px 15px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+    }
+    
+    .search-input:focus {
+        outline: none;
+        border-color: #667eea;
+    }
+    
+    .filter-select {
+        padding: 10px 15px;
+        border: 2px solid #e5e7eb;
+        border-radius: 8px;
+        font-size: 14px;
+        background: white;
+    }
+    
+    .records-table {
+        width: 100%;
+        border-collapse: collapse;
+        margin-bottom: 20px;
+        background: white;
+        border-radius: 10px;
+        overflow: hidden;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .records-table th,
+    .records-table td {
+        padding: 15px;
+        text-align: left;
+        border-bottom: 1px solid #e5e7eb;
+    }
+    
+    .records-table th {
+        background: rgba(102, 126, 234, 0.1);
+        font-weight: 600;
+        color: #333;
+    }
+    
+    .records-table tr:hover {
+        background: rgba(248, 249, 255, 0.8);
+    }
+    
+    .risk-badge {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+        color: white;
+    }
+    
+    .risk-high {
+        background: #ff4757;
+    }
+    
+    .risk-medium {
+        background: #ffa502;
+    }
+    
+    .risk-low {
+        background: #2ed573;
+    }
+    
+    .type-badge {
+        display: inline-block;
+        padding: 3px 10px;
+        border-radius: 12px;
+        font-size: 12px;
+        font-weight: 600;
+        color: #fff;
+    }
+    
+    .type-pypi { 
+        background: #3776ab; 
+    }
+    
+    .type-npm { 
+        background: #cb3837; 
+    }
+    
+    .type-unknown { 
+        background: #888; 
+    }
+    
+    .confidence-bar {
+        width: 100px;
+        height: 8px;
+        background: #e5e7eb;
+        border-radius: 4px;
+        overflow: hidden;
+        display: inline-block;
+    }
+    
+    .confidence-fill {
+        height: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border-radius: 4px;
+    }
+    
+    .status-badge {
+        display: inline-block;
+        padding: 5px 12px;
+        border-radius: 20px;
+        font-size: 12px;
+        font-weight: 600;
+    }
+    
+    .status-completed {
+        background: #d4edda;
+        color: #155724;
+    }
+    
+    .status-pending {
+        background: #fff3cd;
+        color: #856404;
+    }
+    
+    .status-failed {
+        background: #f8d7da;
+        color: #721c24;
+    }
+    
+    .action-buttons {
+        display: flex;
+        gap: 8px;
+    }
+    
+    .btn-small {
+        padding: 5px 12px;
+        border: none;
+        border-radius: 4px;
+        font-size: 12px;
+        cursor: pointer;
+        text-decoration: none;
+        transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+        background: #667eea;
+        color: white;
+    }
+    
+    .btn-primary:hover {
+        background: #5a6fd8;
+    }
+    
+    .btn-secondary {
+        background: #f5f5f5;
+        color: #666;
+    }
+    
+    .btn-secondary:hover {
+        background: #eee;
+    }
+    
+    .btn-icon {
+        width: 28px;
+        height: 28px;
+        display: inline-flex;
+        align-items: center;
+        justify-content: center;
+        padding: 0;
+        border-radius: 4px;
+        cursor: pointer;
+        transition: all 0.2s ease;
+    }
+    
+    .btn-icon:hover {
+        opacity: 0.8;
+    }
+    
+    .empty-state {
+        text-align: center;
+        padding: 60px 20px;
+        color: #666;
+    }
+    
+    .empty-icon {
+        font-size: 48px;
+        margin-bottom: 20px;
+        opacity: 0.5;
+    }
+    
+    .pagination {
+        display: flex;
+        justify-content: center;
+        gap: 10px;
+        margin-top: 20px;
+    }
+    
+    .page-btn {
+        padding: 8px 12px;
+        border: 1px solid #ddd;
+        background: white;
+        color: #666;
+        text-decoration: none;
+        border-radius: 4px;
+        transition: all 0.3s ease;
+    }
+    
+    .page-btn:hover,
+    .page-btn.active {
+        background: #667eea;
+        color: white;
+        border-color: #667eea;
+    }
+    
+    /* 模态框样式 */
+    .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+        position: relative;
+        background-color: #fefefe;
+        margin: 10% auto;
+        padding: 20px;
+        border-radius: 8px;
+        width: 400px;
+        box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+    }
+    
+    .modal-header {
+        padding-bottom: 15px;
+        border-bottom: 1px solid #eee;
+        margin-bottom: 15px;
+    }
+    
+    .modal-title {
+        margin: 0;
+        color: #333;
+        font-size: 18px;
+    }
+    
+    .modal-body {
+        margin-bottom: 20px;
+    }
+    
+    .modal-footer {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+    }
+    
+    .modal-btn {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    
+    .modal-btn-cancel {
+        background: #f5f5f5;
+        color: #666;
+    }
+    
+    .modal-btn-confirm {
+        background: #ff4757;
+        color: white;
+    }
+    
+    .close {
+        position: absolute;
+        right: 15px;
+        top: 15px;
+        color: #aaa;
+        font-size: 20px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+    
+    @media (max-width: 768px) {
+        .search-controls {
+            flex-direction: column;
+        }
+        
+        .search-input {
+            min-width: 100%;
+        }
+        
+        .records-table {
+            font-size: 12px;
+        }
+        
+        .records-table th,
+        .records-table td {
+            padding: 10px 8px;
+        }
+        
+        .action-buttons {
+            flex-direction: column;
+        }
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="history-container">
+    <div class="header">
+        <h1>检测历史记录</h1>
+        <p>查看和管理您的安全检测历史</p>
+    </div>
+    
+    <div class="search-controls">
+        <input type="text" class="search-input" placeholder="搜索文件名..." id="searchInput">
+        <select class="filter-select" id="packageTypeFilter">
+            <option value="">所有包类型</option>
+            <option value="pypi">PyPI</option>
+            <option value="npm">npm</option>
+            <option value="unknown">未知</option>
+        </select>
+        <select class="filter-select" id="riskFilter">
+            <option value="">所有风险等级</option>
+            <option value="high">高风险</option>
+            <option value="medium">中等风险</option>
+            <option value="low">低风险</option>
+        </select>
+        <select class="filter-select" id="statusFilter">
+            <option value="">所有状态</option>
+            <option value="completed">已完成</option>
+            <option value="pending">检测中</option>
+            <option value="failed">失败</option>
+        </select>
+    </div>
+    
+    {% if records %}
+    <table class="records-table" id="recordsTable">
+        <thead>
+            <tr>
+                <th>文件名</th>
+                <th>包类型</th>
+                <th>大小</th>
+                <th>风险等级</th>
+                <th>置信度</th>
+                <th>状态</th>
+                <th>检测时间</th>
+                {% if session.role == 'admin' %}<th>用户</th>{% endif %}
+                <th>操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for record in records %}
+            <tr data-risk="{{ record[3] or '' }}" data-status="{{ record[5] }}" data-filename="{{ record[1] }}" data-package-type="{{ record[7] or 'unknown' }}">
+                <td>
+                    <div style="font-weight: 600; color: #333;">{{ record[1] }}</div>
+                </td>
+                <td>
+                    {% if record[7] == 'pypi' %}
+                        <span class="type-badge type-pypi">PyPI</span>
+                    {% elif record[7] == 'npm' %}
+                        <span class="type-badge type-npm">npm</span>
+                    {% else %}
+                        <span class="type-badge type-unknown">未知</span>
+                    {% endif %}
+                </td>
+                <td>{{ "%.1f"|format(record[2] / 1024 / 1024) }} MB</td>
+                <td>
+                    {% if record[3] == 'high' %}
+                        <span class="risk-badge risk-high">高风险</span>
+                    {% elif record[3] == 'medium' %}
+                        <span class="risk-badge risk-medium">中等风险</span>
+                    {% elif record[3] == 'low' %}
+                        <span class="risk-badge risk-low">低风险</span>
+                    {% else %}
+                        <span style="color: #999;">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if record[4] %}
+                        {% set confidence_percent = (record[4] * 100)|int %}
+                        <div class="confidence-bar">
+                            <div class="confidence-fill" style="width: {{ confidence_percent }}%"></div>
+                        </div>
+                        <span class="confidence-text">{{ confidence_percent }}%</span>
+                    {% else %}
+                        <span class="confidence-text">-</span>
+                    {% endif %}
+                </td>
+                <td>
+                    {% if record[5] == 'completed' %}
+                        <span class="status-badge status-completed">✓ 已完成</span>
+                    {% elif record[5] == 'pending' %}
+                        <span class="status-badge status-pending">⏳ 检测中</span>
+                    {% elif record[5] == 'failed' %}
+                        <span class="status-badge status-failed">✗ 失败</span>
+                    {% else %}
+                        <span class="status-badge status-pending">{{ record[5] }}</span>
+                    {% endif %}
+                </td>
+                <td style="font-size: 12px; color: #666;">
+                    {{ record[6][:16] if record[6] else '-' }}
+                </td>
+                {% if session.role == 'admin' %}
+                <td>
+                    <span style="font-size: 12px; padding: 3px 8px; background: #e2e8f0; border-radius: 10px;">{{ record[8] }}</span>
+                </td>
+                {% endif %}
+                <td>
+                    <div class="action-buttons">
+                        {% if record[5] == 'completed' %}
+                            <a href="/results/{{ record[0] }}" class="btn-small btn-primary">查看详情</a>
+                        {% elif record[5] == 'pending' %}
+                            <a href="/progress/{{ record[0] }}" class="btn-small btn-secondary">查看进度</a>
+                            <button class="btn-small btn-icon" title="取消" onclick="cancelScan('{{ record[0] }}')" style="background: #f8d7da; color: #721c24;">
+                                <i class="cancel-icon">✕</i>
+                            </button>
+                        {% else %}
+                            <a href="#" class="btn-small btn-secondary" onclick="retryDetection('{{ record[0] }}')">重新检测</a>
+                            <button class="btn-small btn-icon" title="删除" onclick="deleteRecord('{{ record[0] }}')" style="background: #f8d7da; color: #721c24;">
+                                <i class="delete-icon">🗑️</i>
+                            </button>
+                        {% endif %}
+                    </div>
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    {% else %}
+    <div class="empty-state">
+        <div class="empty-icon">📊</div>
+        <h3>暂无检测记录</h3>
+        <p>您还没有上传过任何文件进行检测</p>
+        <a href="/" class="btn-primary" style="margin-top: 20px; padding: 12px 30px; border-radius: 8px; text-decoration: none;">开始检测</a>
+    </div>
+    {% endif %}
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+// 搜索和过滤功能
+function filterRecords() {
+    const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+    const packageTypeFilter = document.getElementById('packageTypeFilter').value;
+    const riskFilter = document.getElementById('riskFilter').value;
+    const statusFilter = document.getElementById('statusFilter').value;
+    
+    const rows = document.querySelectorAll('#recordsTable tbody tr');
+    
+    rows.forEach(row => {
+        const filename = row.dataset.filename.toLowerCase();
+        const risk = row.dataset.risk;
+        const status = row.dataset.status;
+        
+        const matchesSearch = filename.includes(searchTerm);
+        const matchesPackageType = !packageTypeFilter || row.dataset.packageType === packageTypeFilter;
+        const matchesRisk = !riskFilter || risk === riskFilter;
+        const matchesStatus = !statusFilter || status === statusFilter;
+        
+        if (matchesSearch && matchesPackageType && matchesRisk && matchesStatus) {
+            row.style.display = '';
+        } else {
+            row.style.display = 'none';
+        }
+    });
+}
+
+// 绑定事件监听器
+document.getElementById('searchInput').addEventListener('input', filterRecords);
+document.getElementById('packageTypeFilter').addEventListener('change', filterRecords);
+document.getElementById('riskFilter').addEventListener('change', filterRecords);
+document.getElementById('statusFilter').addEventListener('change', filterRecords);
+
+// 定时刷新pending状态的记录
+setInterval(function() {
+    const pendingRows = document.querySelectorAll('tr[data-status="pending"]');
+    if (pendingRows.length > 0) {
+        location.reload();
+    }
+}, 30000); // 30秒刷新一次
+
+// 取消扫描
+function cancelScan(scanId) {
+    if (confirm('确定要取消这次扫描吗？')) {
+        fetch(`/cancel_scan/${scanId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('扫描已取消');
+                location.reload();
+            } else {
+                alert('操作失败: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('错误:', error);
+            alert('操作失败，请稍后重试');
+        });
+    }
+}
+
+// 重新检测
+function retryDetection(scanId) {
+    if (confirm('确定要重新检测这个文件吗？')) {
+        fetch(`/retry_scan/${scanId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('已开始重新检测');
+                location.reload();
+            } else {
+                alert('操作失败: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('错误:', error);
+            alert('操作失败，请稍后重试');
+        });
+    }
+}
+
+// 删除记录
+function deleteRecord(scanId) {
+    if (confirm('确定要删除这条记录吗？此操作不可恢复。')) {
+        fetch(`/delete_record/${scanId}`, {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                alert('记录已删除');
+                location.reload();
+            } else {
+                alert('操作失败: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('错误:', error);
+            alert('操作失败，请稍后重试');
+        });
+    }
+}
+</script>
+{% endblock %} 
