@@ -175,7 +175,7 @@ def index():
         'accuracy': accuracy
     }
     conn.close()
-    return render_template('index.html', 
+    return render_template('user/index.html',
                           stats=stats,
                           malicious_packages=malicious_packages,
                           recent_scans=formatted_recent_scans,
@@ -244,18 +244,18 @@ def history():
             ''', (session['user_id'],))
         
         records = cursor.fetchall()
-        return render_template('history.html', records=records)
+        return render_template('user/history.html', records=records)
     except Exception as e:
         print(f"Error in history: {e}")
         flash('获取历史记录时出现错误', 'error')
-        return render_template('history.html', records=[])
+        return render_template('user/history.html', records=[])
     finally:
         if conn:
             conn.close()
 
 @user_bp.route('/guide')
 def guide():
-    return render_template('guide.html')
+    return render_template('user/guide.html')
 
 @user_bp.route('/knowledge')
 def knowledge():
@@ -846,7 +846,7 @@ def get_scan_result(scan_id):
         }
     ]
     
-    return render_template('knowledge.html', articles=articles, faqs=faqs)
+    return render_template('user/knowledge.html', articles=articles, faqs=faqs)
 
 @user_bp.route('/download_report/<int:scan_id>/<format>')
 @login_required
@@ -953,7 +953,7 @@ def package_encyclopedia():
     # 按包数量排序
     language_cards.sort(key=lambda x: x['count'], reverse=True)
     
-    return render_template('package_encyclopedia_landing.html', 
+    return render_template('user/package_encyclopedia_landing.html',
                           language_cards=language_cards,
                           search_query=search_query)
 
@@ -975,8 +975,8 @@ def package_list(package_type=None):
         packages = PackageEncyclopedia.get_all()
         page_title = "所有包"
         
-    return render_template('package_list.html', 
-                          packages=packages, 
+    return render_template('admin/package_list.html',
+                          packages=packages,
                           page_title=page_title,
                           search_query=search_query)
 
@@ -990,7 +990,7 @@ def package_detail(package_id):
         flash('包百科条目不存在', 'error')
         return redirect(url_for('user.package_encyclopedia'))
     
-    return render_template('package_detail.html', package=package)
+    return render_template('user/package_detail.html', package=package)
 
 @user_bp.route('/package_encyclopedia/add', methods=['GET', 'POST'])
 @login_required
@@ -1026,7 +1026,7 @@ def add_package():
         except Exception as e:
             flash(f'添加失败: {str(e)}', 'error')
     
-    return render_template('add_package.html')
+    return render_template('admin/add_package.html')
 
 @user_bp.route('/package_encyclopedia/edit/<int:package_id>', methods=['GET', 'POST'])
 @login_required
@@ -1065,7 +1065,7 @@ def edit_package(package_id):
         except Exception as e:
             flash(f'更新失败: {str(e)}', 'error')
     
-    return render_template('edit_package.html', package=package)
+    return render_template('admin/edit_package.html', package=package)
 
 @user_bp.route('/package_encyclopedia/delete/<int:package_id>', methods=['POST'])
 @login_required
@@ -1094,4 +1094,4 @@ def delete_package(package_id):
 @login_required
 def demo():
     """界面演示页面"""
-    return render_template('demo.html')
+    return render_template('shared/demo.html')

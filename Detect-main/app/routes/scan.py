@@ -35,7 +35,7 @@ scan_bp = Blueprint('scan', __name__)
 @scan_bp.route('/scan')
 @login_required
 def scan():
-    return render_template('scan.html')
+    return render_template('scan/scan.html')
 
 @scan_bp.route('/upload', methods=['POST'])
 @login_required
@@ -198,12 +198,12 @@ def results(scan_id):
         'technical_details': scan_record.technical_details
     }
     
-    return render_template('results.html', scan_data=scan_data)
+    return render_template('scan/results.html', scan_data=scan_data)
 
 @scan_bp.route('/progress/<int:scan_id>')
 @login_required
 def progress(scan_id):
-    return render_template('progress.html', scan_id=scan_id)
+    return render_template('scan/progress.html', scan_id=scan_id)
 
 @scan_bp.route('/cancel_scan/<int:scan_id>', methods=['POST'])
 @login_required

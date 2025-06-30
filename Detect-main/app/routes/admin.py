@@ -42,7 +42,7 @@ admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 @admin_bp.route('/')
 @admin_required
 def admin():
-    return render_template('admin.html')
+    return render_template('admin/admin.html')
 
 @admin_bp.route('/model', methods=['GET', 'POST'])
 @admin_required
@@ -76,7 +76,7 @@ def model_management():
             'size': os.path.getsize(model_path) if os.path.exists(model_path) else 0
         }
     
-    return render_template('model_management.html', model_info=model_info, model_types=model_types)
+    return render_template('admin/model_management.html', model_info=model_info, model_types=model_types)
 
 @admin_bp.route('/samples', methods=['GET'])
 @admin_required
@@ -100,7 +100,7 @@ def sample_management():
             'package_type': sample['package_type'] if 'package_type' in sample.keys() else 'unknown'
         })
     
-    return render_template('sample_management.html', samples=sample_list)
+    return render_template('admin/sample_management.html', samples=sample_list)
 
 @admin_bp.route('/samples/upload', methods=['POST'])
 @admin_required
@@ -322,8 +322,8 @@ def user_management():
     
     conn.close()
     
-    return render_template('user_management.html', 
-                          users=users, 
+    return render_template('admin/user_management.html',
+                          users=users,
                           total_users=total_users,
                           admin_count=admin_count,
                           active_users=active_users)
@@ -394,13 +394,13 @@ def edit_user(user_id):
         if cursor.fetchone():
             flash('用户名已被使用', 'error')
             conn.close()
-            return render_template('edit_user.html', user=user)
+            return render_template('admin/edit_user.html', user=user)
         
         cursor.execute('SELECT id FROM users WHERE email = ? AND id != ?', (email, user_id))
         if cursor.fetchone():
             flash('邮箱已被注册', 'error')
             conn.close()
-            return render_template('edit_user.html', user=user)
+            return render_template('admin/edit_user.html', user=user)
         
         # 更新用户信息
         cursor.execute(
@@ -413,7 +413,7 @@ def edit_user(user_id):
         return redirect(url_for('admin.user_management'))
     
     conn.close()
-    return render_template('edit_user.html', user=user)
+    return render_template('admin/edit_user.html', user=user)
 
 @admin_bp.route('/users/delete/<int:user_id>', methods=['POST'])
 @admin_required
@@ -526,7 +526,7 @@ def settings():
     settings = cursor.fetchall()
     conn.close()
     
-    return render_template('settings.html', settings=settings)
+    return render_template('admin/settings.html', settings=settings)
 
 @admin_bp.route('/crawl_packages', methods=['GET', 'POST'])
 @admin_required
@@ -549,7 +549,7 @@ def crawl_packages():
             result = proc.stdout + '\n' + proc.stderr
         except Exception as e:
             result = f'抓取失败: {e}'
-    return render_template('crawl_packages.html', result=result)
+    return render_template('scan/crawl_packages.html', result=result)
 
 @admin_bp.route('/anomalies')
 @admin_required

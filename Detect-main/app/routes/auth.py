@@ -17,7 +17,7 @@ def register():
         # 验证两次密码输入是否一致
         if password != confirm_password:
             flash('两次输入的密码不一致', 'error')
-            return render_template('register.html')
+            return render_template('auth/register.html')
         
         conn = sqlite3.connect(Config.DATABASE_PATH)
         cursor = conn.cursor()
@@ -27,14 +27,14 @@ def register():
         if cursor.fetchone():
             flash('用户名已被使用', 'error')
             conn.close()
-            return render_template('register.html')
+            return render_template('auth/register.html')
         
         # 检查邮箱是否已存在
         cursor.execute('SELECT id FROM users WHERE email = ?', (email,))
         if cursor.fetchone():
             flash('邮箱已被注册', 'error')
             conn.close()
-            return render_template('register.html')
+            return render_template('auth/register.html')
         
         # 创建用户
         password_hash = generate_password_hash(password)
@@ -57,7 +57,7 @@ def register():
         flash('注册成功，欢迎使用！', 'success')
         return redirect(url_for('user.index'))
     
-    return render_template('register.html')
+    return render_template('auth/register.html')
 
 @auth_bp.route('/login', methods=['GET', 'POST'])
 def login():
@@ -88,7 +88,7 @@ def login():
         else:
             flash('用户名或密码错误', 'error')
     
-    return render_template('login.html')
+    return render_template('auth/login.html')
 
 @auth_bp.route('/logout')
 def logout():
