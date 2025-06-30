@@ -35,21 +35,6 @@ def init_package_encyclopedia():
             'alternatives': 'httpx, urllib3, aiohttp, httplib2'
         },
         {
-            'package_name': 'numpy',
-            'package_type': 'Python',
-            'description': 'Python 科学计算的基础库，提供高性能的多维数组对象和数学函数。',
-            'version': '1.26.4',
-            'author': 'Travis Oliphant et al.',
-            'license': 'BSD',
-            'repository': 'https://github.com/numpy/numpy',
-            'official_website': 'https://numpy.org/',
-            'tags': '科学计算,数组,矩阵,数据分析',
-            'security_notes': '注意大数据量运算时的内存消耗。',
-            'common_risks': '数组越界、内存泄漏。',
-            'best_practices': '合理切片、避免不必要的复制、及时释放内存。',
-            'alternatives': 'scipy, cupy, arrayfire'
-        },
-        {
             'package_name': 'pandas',
             'package_type': 'Python',
             'description': '强大的数据分析和处理库，提供灵活的数据结构和高效的数据操作工具。',
@@ -65,19 +50,49 @@ def init_package_encyclopedia():
             'alternatives': 'dask, modin, polars'
         },
         {
-            'package_name': 'flask',
+            'package_name': 'Django',
             'package_type': 'Python',
-            'description': '轻量级 Web 框架，适合快速开发 Web 应用和 API。',
-            'version': '3.0.3',
-            'author': 'Armin Ronacher',
+            'description': '高级 Python Web 框架，鼓励快速开发和简洁、实用的设计。',
+            'version': '5.0.4',
+            'author': 'Django Software Foundation',
             'license': 'BSD',
-            'repository': 'https://github.com/pallets/flask',
-            'official_website': 'https://flask.palletsprojects.com/',
-            'tags': 'Web框架,API,后端,轻量级',
-            'security_notes': '生产环境不要开启 debug，注意 CSRF/XSS。',
-            'common_risks': '调试模式暴露、模板注入。',
-            'best_practices': '关闭 debug、使用官方扩展、定期升级。',
-            'alternatives': 'django, fastapi, tornado'
+            'repository': 'https://github.com/django/django',
+            'official_website': 'https://www.djangoproject.com/',
+            'tags': 'Web框架,后端,ORM,安全',
+            'security_notes': '内置多种安全防护（如CSRF、XSS、SQL注入防护），但需定期升级。',
+            'common_risks': '配置不当导致安全机制失效。',
+            'best_practices': '使用官方推荐配置、定期升级、关闭debug。',
+            'alternatives': 'flask, fastapi, tornado'
+        },
+        {
+            'package_name': 'matplotlib',
+            'package_type': 'Python',
+            'description': '最常用的 Python 绘图库，支持多种图表类型和自定义。',
+            'version': '3.8.4',
+            'author': 'John D. Hunter et al.',
+            'license': 'PSF',
+            'repository': 'https://github.com/matplotlib/matplotlib',
+            'official_website': 'https://matplotlib.org/',
+            'tags': '可视化,绘图,科学计算',
+            'security_notes': '注意图片输出路径权限。',
+            'common_risks': '大数据绘图时内存消耗大。',
+            'best_practices': '分批绘图、及时关闭figure。',
+            'alternatives': 'seaborn, plotly, bokeh'
+        },
+        {
+            'package_name': 'scikit-learn',
+            'package_type': 'Python',
+            'description': '机器学习领域最流行的 Python 库，支持分类、回归、聚类等多种算法。',
+            'version': '1.4.2',
+            'author': 'scikit-learn developers',
+            'license': 'BSD',
+            'repository': 'https://github.com/scikit-learn/scikit-learn',
+            'official_website': 'https://scikit-learn.org/',
+            'tags': '机器学习,数据挖掘,算法',
+            'security_notes': '注意数据泄露风险，避免训练集和测试集混用。',
+            'common_risks': '特征泄露、过拟合。',
+            'best_practices': '使用交叉验证、标准化数据、合理选择模型。',
+            'alternatives': 'xgboost, lightgbm, tensorflow'
         },
         # npm
         {
@@ -139,6 +154,36 @@ def init_package_encyclopedia():
             'common_risks': '未处理超时、未做错误处理、XSS 风险。',
             'best_practices': '统一封装请求、设置超时、处理异常。',
             'alternatives': 'fetch, superagent, got'
+        },
+        {
+            'package_name': 'vue',
+            'package_type': 'JavaScript',
+            'description': '渐进式 JavaScript 框架，专注于构建用户界面，易于集成。',
+            'version': '3.4.21',
+            'author': '尤雨溪等',
+            'license': 'MIT',
+            'repository': 'https://github.com/vuejs/vue',
+            'official_website': 'https://vuejs.org/',
+            'tags': '前端,UI,组件化,响应式',
+            'security_notes': '注意 XSS 风险，避免直接操作 DOM。',
+            'common_risks': 'XSS、依赖包漏洞。',
+            'best_practices': '使用受控组件、定期升级依赖。',
+            'alternatives': 'react, angular, svelte'
+        },
+        {
+            'package_name': 'moment',
+            'package_type': 'JavaScript',
+            'description': '流行的 JavaScript 日期处理库，API 简单易用。',
+            'version': '2.30.1',
+            'author': 'Iskren Ivov Chernev',
+            'license': 'MIT',
+            'repository': 'https://github.com/moment/moment',
+            'official_website': 'https://momentjs.com/',
+            'tags': '日期处理,时间,工具库',
+            'security_notes': '注意时区处理，官方已不再维护，建议迁移。',
+            'common_risks': '时区混乱、包体积大。',
+            'best_practices': '优先使用 dayjs、date-fns 等替代品。',
+            'alternatives': 'dayjs, date-fns, luxon'
         }
     ]
     print("开始初始化包百科数据...")

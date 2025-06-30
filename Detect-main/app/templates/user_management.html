@@ -210,7 +210,12 @@ function filterUsers() {
     tr = table.getElementsByTagName("tr");
     
     var roleFilter = document.getElementById("roleFilter").value;
-    
+    // 角色英文到中文的映射
+    var roleMap = {
+        'admin': '管理员',
+        'user': '普通用户'
+    };
+    var roleFilterText = roleMap[roleFilter] || '';
     // 从索引1开始，跳过表头
     for (i = 1; i < tr.length; i++) {
         let usernameCol = tr[i].getElementsByTagName("td")[1];
@@ -224,7 +229,7 @@ function filterUsers() {
             
             let matchesSearch = usernameValue.toUpperCase().indexOf(filter) > -1 || 
                                emailValue.toUpperCase().indexOf(filter) > -1;
-            let matchesRole = !roleFilter || roleValue.toLowerCase().indexOf(roleFilter.toLowerCase()) > -1;
+            let matchesRole = !roleFilter || roleValue.indexOf(roleFilterText) > -1;
             
             if (matchesSearch && matchesRole) {
                 tr[i].style.display = "";
