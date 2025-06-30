@@ -1,7 +1,7 @@
 import requests
 import json
 import re
-from config import Config
+from config.config import Config
 from app.utils.helpers import get_setting
 from typing import Dict, Any
 
@@ -179,6 +179,17 @@ class DeepSeekAnalyzer:
 - 建议2：...
 
 > **注意**：所有内容请用中文输出，结构化展示，便于人工复核。
+
+---
+**【重要】** 如果你判断该包为恶意或存在高风险，请在下方额外提供一个JSON代码块，包含详细的恶意代码分析。如果无明显可疑代码则返回一个包含空字符串的JSON。格式如下：
+```json
+{{
+  "code_location": "恶意代码所在的文件路径，例如 /lib/core.js",
+  "malicious_action": "对恶意行为的总结，例如：通过异或运算解码base64内容并动态执行",
+  "technical_details": "对采用的技术手法的总结，例如：采用多层混淆(base64+异或编码+动态执行)",
+  "malicious_code_snippet": "最关键的可疑代码片段（5-10行）"
+}}
+```
 """
 
         # 追加结构化Markdown格式要求
@@ -221,175 +232,106 @@ class DeepSeekAnalyzer:
         return prompt
     
     def _parse_analysis(self, analysis_text, xgboost_result=None):
-        """解析DeepSeek的分析结果，risk_level与XGBoost分数联动"""
-        print(f"[DEBUG] start parsing analysis text: {analysis_text[:200]}...")
+        """(Robustly)解析LLM的分析结果，并提取所有相关字段"""
+        print("-" * 80)
+        print("[RAW AI RESPONSE]:")
+        print(analysis_text)
+        print("-" * 80)
 
-        # 如果大模型返回内容为空或全是无，自动生成结构化兜底内容
-        if not analysis_text or analysis_text.strip() == '' or all(x in analysis_text for x in ['类型', '未知', '无', '暂无']):
-            print("[DEBUG] 大模型返回内容为空或全为无，自动生成兜底内容")
-            # 兜底内容根据XGBoost结果和特征生成
-            if xgboost_result:
-                pred = xgboost_result.get('prediction', 0)
-                conf = xgboost_result.get('confidence', 0.0)
-                risk_score = xgboost_result.get('risk_score', 0.0)
-                # 恶意类型
-                mal_type = '高风险可疑包' if pred == 1 else '无明显恶意'
-                mal_reason = '机器学习模型判定为高风险，建议人工复核' if pred == 1 else '未发现明显恶意特征，模型判定为安全'
-                # 可疑特征
-                features = xgboost_result.get('features', {}) if 'features' in xgboost_result else {}
-                suspicious = []
-                if features:
-                    if features.get('Number of base64 chunks in source code', 0) > 10:
-                        suspicious.append('| Base64块数量 | {} | 代码中存在大量Base64编码 |'.format(features['Number of base64 chunks in source code']))
-                    if features.get('Number of sospicious token in source code', 0) > 10:
-                        suspicious.append('| 可疑token数量 | {} | 代码中存在大量可疑token |'.format(features['Number of sospicious token in source code']))
-                    if features.get('.py', 0) > 1000:
-                        suspicious.append('| Python文件数 | {} | 代码体量巨大 |'.format(features['.py']))
-                if not suspicious:
-                    suspicious.append('暂无可疑特征数据')
-                suspicious_md = '\n'.join(suspicious)
-                # 风险等级
-                risk_level = 'HIGH' if pred == 1 else 'SAFE'
-                risk_points = '机器学习模型判定为高风险' if pred == 1 else '无'
-                # 安全建议
-                if pred == 1:
-                    advice = ['- 建议人工复核', '- 建议停止使用', '- 关注官方安全公告']
-                else:
-                    advice = ['- 建议定期关注安全公告', '- 建议持续监控组件安全']
-                advice_md = '\n'.join(advice)
-                analysis_text = f"""### 恶意类型判断\n类型：{mal_type}\n理由：{mal_reason}\n\n### 主要可疑特征（Top 5）\n{suspicious_md}\n\n### 风险等级评估\n风险等级：{risk_level}\n主要风险点：{risk_points}\n\n### 安全建议\n{advice_md}\n"""
-            else:
-                analysis_text = """### 恶意类型判断\n类型：无明显恶意\n理由：未发现明显恶意特征，机器学习模型判定为安全。\n\n### 主要可疑特征（Top 5）\n暂无可疑特征数据\n\n### 风险等级评估\n风险等级：SAFE\n主要风险点：无\n\n### 安全建议\n- 建议定期关注安全公告\n- 建议持续监控组件安全\n"""
-
-        # 默认中风险
-        risk_level = 'medium'
-        
-        # 先用大模型文本关键词判定
-        if 'High risk' in analysis_text or 'High danger' in analysis_text or 'Malicious' in analysis_text:
-            risk_level = 'high'
-        elif 'Low risk' in analysis_text or 'Safe' in analysis_text or 'Normal' in analysis_text:
-            risk_level = 'low'
-        
-        # 如果XGBoost分数很高，强制high
-        if xgboost_result:
-            risk_score = xgboost_result.get('risk_score', 0)
-            confidence = xgboost_result.get('confidence', 0)
-            print(f"[DEBUG] XGBoost risk score: {risk_score}, confidence: {confidence}")
-            
-            # 只要risk_score或confidence大于0.6就high
-            if risk_score >= 0.6 or confidence >= 0.8:
-                risk_level = 'high'
-                print(f"[DEBUG] forced to high risk based on XGBoost score")
-            elif risk_score >= 0.4 or confidence >= 0.6:
-                risk_level = 'medium'
-            elif risk_score >= 0.2 or confidence >= 0.3:
-                risk_level = 'low'
-            else:
-                risk_level = 'safe'
-        
-        # 计算置信度（基于文本长度和关键词）
-        confidence = 0.7
-        if len(analysis_text) > 200:
-            confidence += 0.1
-        if any(word in analysis_text for word in ['Obvious', 'Determined', 'Definitely', 'Malicious', 'Dangerous']):
-            confidence += 0.1
-        if any(word in analysis_text for word in ['Possible', 'Perhaps', 'Suggest', 'Need further']):
-            confidence -= 0.1
-        
-        confidence = max(0.5, min(0.95, confidence))
-        
-        # 转换markdown为友好的中文显示格式
-        friendly_analysis = self._convert_markdown_to_friendly_text(analysis_text)
-        
-        # 自动提取恶意包类型
-        mal_type = "未知"
-        mal_type_reason = ""
-        
-        # 尝试从不同格式中提取类型和理由
-        type_patterns = [
-            r'类型[：: ]*([\u4e00-\u9fa5A-Za-z0-9_\-]+)',
-            r'恶意类型[：: ]*([\u4e00-\u9fa5A-Za-z0-9_\-]+)',
-            r'判定类型[：: ]*([\u4e00-\u9fa5A-Za-z0-9_\-]+)'
-        ]
-        
-        reason_patterns = [
-            r'理由[：: ]*(.+?)(?=\n|$)',
-            r'判断依据[：: ]*(.+?)(?=\n|$)',
-            r'分析结果[：: ]*(.+?)(?=\n|$)'
-        ]
-        
-        # 尝试所有模式直到找到匹配
-        for pattern in type_patterns:
-            type_match = re.search(pattern, analysis_text)
-            if type_match:
-                mal_type = type_match.group(1).strip()
-                break
-                
-        for pattern in reason_patterns:
-            reason_match = re.search(pattern, analysis_text)
-            if reason_match:
-                mal_type_reason = reason_match.group(1).strip()
-                break
-        
-        # 提取主要可疑特征
-        top_features = []
-        try:
-            # 尝试从表格中提取
-            table_pattern = r'\|(.*?)\|(.*?)\|(.*?)\|'
-            matches = re.findall(table_pattern, analysis_text)
-            if matches:
-                # 跳过表头
-                for match in matches[1:6]:  # 只取前5个
-                    name = match[0].strip()
-                    value = match[1].strip()
-                    desc = match[2].strip()
-                    if name and value and desc and name != "特征名称":
-                        top_features.append({
-                            "name": name,
-                            "value": value,
-                            "desc": desc
-                        })
-        except Exception as e:
-            print(f"[DEBUG] 提取可疑特征失败: {e}")
-        
-        # 提取安全建议
-        advice_list = []
-        try:
-            advice_section = re.search(r'安全建议[：:](.*?)(?=###|$)', analysis_text, re.DOTALL)
-            if advice_section:
-                advice_text = advice_section.group(1)
-                # 提取列表项
-                advice_items = re.findall(r'[•\-\*]\s*(.+?)(?=\n|$)', advice_text)
-                advice_list = [item.strip() for item in advice_items if item.strip()]
-        except Exception as e:
-            print(f"[DEBUG] 提取安全建议失败: {e}")
-        
-        # 提取风险点
-        risk_points = ""
-        try:
-            risk_section = re.search(r'主要风险点[：:](.*?)(?=###|$)', analysis_text, re.DOTALL)
-            if risk_section:
-                risk_points = risk_section.group(1).strip()
-        except Exception as e:
-            print(f"[DEBUG] 提取风险点失败: {e}")
-
-        result = {
-            'risk_level': risk_level,
-            'confidence': confidence,
-            'analysis': friendly_analysis,  # 使用转换后的友好格式
-            'raw_analysis': analysis_text,  # 保留原始markdown格式
-            'type': mal_type,
-            'reason': mal_type_reason,
-            'top_features': top_features,
-            'advice_list': advice_list,
-            'risk_points': risk_points
+        # Initialize defaults
+        malicious_code_info = {
+            "code_location": "", "malicious_action": "", "technical_details": "", "malicious_code_snippet": ""
         }
+        mal_type = '未知'
+        mal_reason = '无'
+        risk_level = '未知'
+        risk_points = 'AI未提供详细风险点'
+        advice_list = []
+        top_features = []
         
-        print(f"[DEBUG] parsed result: {result}")
-        return result
+        # 1. Extract JSON blob first
+        try:
+            match = re.search(r'```json\s*(\{.*?\})\s*```', analysis_text, re.DOTALL)
+            if match:
+                json_str = match.group(1)
+                data = json.loads(json_str)
+                malicious_code_info["code_location"] = data.get("code_location", "")
+                malicious_code_info["malicious_action"] = data.get("malicious_action", "")
+                malicious_code_info["technical_details"] = data.get("technical_details", "")
+                malicious_code_info["malicious_code_snippet"] = data.get("malicious_code_snippet", "")
+                analysis_text = analysis_text.replace(match.group(0), "")
+        except (json.JSONDecodeError, IndexError) as e:
+            print(f"[DEBUG] Failed to parse malicious code snippet JSON: {e}")
+
+        # 2. Split analysis text into sections for robust parsing
+        sections = re.split(r'###\s*', analysis_text)
+        
+        for section in sections:
+            section_title = section.split('\n')[0].strip()
+
+            # Parse "恶意类型判断" section
+            if '恶意类型判断' in section_title:
+                type_match = re.search(r'\*\*?类型\*\*?\s*[:：]\s*(.+)', section)
+                if type_match: mal_type = type_match.group(1).strip()
+                
+                reason_match = re.search(r'\*\*?理由\*\*?\s*[:：]\s*(.+)', section)
+                if reason_match: mal_reason = reason_match.group(1).strip()
+
+            # Parse "主要可疑特征" section
+            elif '主要可疑特征' in section_title:
+                rows = re.findall(r'\|\s*(.*?)\s*\|\s*(.*?)\s*\|\s*(.*?)\s*\|', section)
+                for name, value, desc in rows:
+                    name, value, desc = name.strip(), value.strip(), desc.strip()
+                    if '特征名称' not in name and '---' not in name and name:
+                        top_features.append({'name': name, 'value': value, 'desc': desc})
+            
+            # Parse "风险等级评估" section
+            elif '风险等级评估' in section_title:
+                level_match = re.search(r'\*\*?风险等级\*\*?\s*[:：]\s*(高|中|低)', section)
+                if level_match: 
+                    chinese_level = level_match.group(1).strip()
+                    # 将中文风险等级转换为英文
+                    if chinese_level == '高':
+                        risk_level = 'high'
+                    elif chinese_level == '中':
+                        risk_level = 'medium'
+                    elif chinese_level == '低':
+                        risk_level = 'low'
+                    else:
+                        risk_level = 'unknown'
+
+                points_match = re.search(r'\*\*?主要风险点\*\*?\s*[:：]([\s\S]*)', section)
+                if points_match: 
+                    risk_points = points_match.group(1).strip()
+            
+            # Parse "安全建议" section
+            elif '安全建议' in section_title:
+                advice_text_match = re.search(r'安全建议\s*[:：]([\s\S]*)', section)
+                if advice_text_match:
+                    advice_text = advice_text_match.group(1).strip()
+                    advice_list = [adv.strip('- ').strip() for adv in advice_text.split('\n') if adv.strip() and not adv.strip().isspace()]
+
+        # Combine final result
+        risk_explanation = f"风险等级: {risk_level}\n主要风险点:\n{risk_points}"
+
+        final_result = {
+            'risk_level': risk_level,
+            'confidence': xgboost_result.get('confidence', 0.5),
+            'type': mal_type,
+            'reason': mal_reason,
+            'top_features': top_features,
+            'risk_points': risk_points,
+            'advice_list': advice_list,
+            'raw_analysis': analysis_text,
+            'risk_explanation': risk_explanation,
+            'llm_result': self._convert_markdown_to_friendly_text(analysis_text)
+        }
+        final_result.update(malicious_code_info)
+        
+        return final_result
     
     def _fallback_analysis(self, xgboost_result):
-        """当API调用失败时的后备分析"""
+        """在API调用失败或超时的情况下，提供基于XGBoost的备用分析结果"""
         print("[DEBUG] using fallback analysis")
         
         # 根据XGBoost结果生成分析文本

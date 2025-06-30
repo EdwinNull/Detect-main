@@ -1,0 +1,13 @@
+{
+  "scan_id": 129,
+  "filename": "vipen-0.2.4.tgz",
+  "file_size": 6757,
+  "file_hash": "50ab329eeebc3c3b8c7f6e49f23c5638",
+  "risk_level": 0.9237600564956665,
+  "confidence": "completed",
+  "xgboost_result": {},
+  "llm_result": {},
+  "risk_explanation": "npm",
+  "scan_time": null,
+  "created_at": null
+}

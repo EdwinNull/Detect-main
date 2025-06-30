@@ -1,7 +1,7 @@
 import sqlite3
 import json
 import os
-from config import Config
+from config.config import Config
 
 def main():
     conn = sqlite3.connect(Config.DATABASE_PATH)

@@ -2,7 +2,7 @@ from flask import Blueprint, render_template, request, redirect, url_for, sessio
 from werkzeug.security import check_password_hash, generate_password_hash
 import sqlite3
 from datetime import datetime
-from config import Config
+from config.config import Config
 
 auth_bp = Blueprint('auth', __name__)
 

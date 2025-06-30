@@ -4,99 +4,156 @@
 
 {% block content %}
 <div class="user-management-container" style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); margin-bottom: 30px;">
-    <h2 style="margin-bottom: 20px; color: #667eea;">用户管理</h2>
+    <h2 style="margin-bottom: 20px; color: #667eea;">👥 用户管理</h2>
     
     <!-- 用户统计 -->
     <div style="display: flex; gap: 20px; margin-bottom: 30px; flex-wrap: wrap;">
         <div style="background: rgba(102, 126, 234, 0.1); padding: 20px; border-radius: 8px; min-width: 150px; text-align: center; flex: 1;">
-            <div style="font-size: 24px; font-weight: bold;">{{ total_users }}</div>
+            <div style="font-size: 24px; font-weight: bold; color: #667eea;">{{ total_users }}</div>
             <div style="color: #666; font-size: 14px;">总用户数</div>
         </div>
         <div style="background: rgba(102, 126, 234, 0.1); padding: 20px; border-radius: 8px; min-width: 150px; text-align: center; flex: 1;">
-            <div style="font-size: 24px; font-weight: bold;">{{ admin_count }}</div>
+            <div style="font-size: 24px; font-weight: bold; color: #667eea;">{{ admin_count }}</div>
             <div style="color: #666; font-size: 14px;">管理员数</div>
         </div>
         <div style="background: rgba(102, 126, 234, 0.1); padding: 20px; border-radius: 8px; min-width: 150px; text-align: center; flex: 1;">
-            <div style="font-size: 24px; font-weight: bold;">{{ active_users }}</div>
+            <div style="font-size: 24px; font-weight: bold; color: #667eea;">{{ active_users }}</div>
             <div style="color: #666; font-size: 14px;">活跃用户</div>
         </div>
     </div>
     
-    <!-- 添加用户 -->
-    <div style="margin-bottom: 30px; padding: 20px; border: 1px solid #eee; border-radius: 8px;">
-        <h3 style="margin-bottom: 15px; font-size: 18px;">添加新用户</h3>
-        <form method="POST" action="{{ url_for('admin.add_user') }}">
-            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 15px;">
+    <!-- 快速操作区域 -->
+    <div style="margin-bottom: 30px; padding: 25px; background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); border-radius: 12px; color: white;">
+        <h3 style="margin-bottom: 20px; font-size: 20px;">🚀 快速操作</h3>
+        <div style="display: flex; gap: 15px; flex-wrap: wrap;">
+            <button onclick="showAddUserForm()" style="background: rgba(255,255,255,0.2); color: white; padding: 12px 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s ease;">
+                ➕ 添加新用户
+            </button>
+            <button onclick="showBulkAddForm()" style="background: rgba(255,255,255,0.2); color: white; padding: 12px 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s ease;">
+                📝 批量添加用户
+            </button>
+            <button onclick="exportUsers()" style="background: rgba(255,255,255,0.2); color: white; padding: 12px 20px; border: 2px solid rgba(255,255,255,0.3); border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; transition: all 0.3s ease;">
+                📊 导出用户列表
+            </button>
+        </div>
+    </div>
+    
+    <!-- 添加用户表单 (默认隐藏) -->
+    <div id="addUserForm" style="display: none; margin-bottom: 30px; padding: 25px; border: 2px solid #667eea; border-radius: 12px; background: rgba(102, 126, 234, 0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 18px; color: #667eea; margin: 0;">➕ 添加新用户</h3>
+            <button onclick="hideAddUserForm()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #666;">✕</button>
+        </div>
+        <form method="POST" action="{{ url_for('admin.add_user') }}" id="userForm">
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
                 <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">用户名</label>
-                    <input type="text" name="username" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">👤 用户名 *</label>
+                    <input type="text" name="username" required style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;" placeholder="请输入用户名">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">用户名将用于登录系统</div>
                 </div>
                 <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">邮箱</label>
-                    <input type="email" name="email" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">📧 邮箱地址 *</label>
+                    <input type="email" name="email" required style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;" placeholder="user@example.com">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">用于密码重置和通知</div>
                 </div>
                 <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">初始密码</label>
-                    <input type="password" name="password" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">🔒 初始密码 *</label>
+                    <input type="password" name="password" required style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;" placeholder="请输入初始密码">
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">建议使用8位以上密码</div>
                 </div>
                 <div>
-                    <label style="display: block; margin-bottom: 5px; font-weight: 500;">用户角色</label>
-                    <select name="role" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
-                        <option value="user">普通用户</option>
-                        <option value="admin">管理员</option>
+                    <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">👑 用户角色</label>
+                    <select name="role" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;">
+                        <option value="user">👤 普通用户 - 可以扫描和查看结果</option>
+                        <option value="admin">👑 管理员 - 可以管理用户和系统</option>
                     </select>
+                    <div style="font-size: 12px; color: #666; margin-top: 5px;">选择用户的权限级别</div>
                 </div>
             </div>
-            <button type="submit" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">添加用户</button>
+            <div style="display: flex; gap: 15px;">
+                <button type="submit" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                    ✅ 确认添加用户
+                </button>
+                <button type="button" onclick="hideAddUserForm()" style="background: #e2e8f0; color: #333; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                    ❌ 取消
+                </button>
+            </div>
         </form>
+    </div>
+    
+    <!-- 批量添加用户表单 (默认隐藏) -->
+    <div id="bulkAddForm" style="display: none; margin-bottom: 30px; padding: 25px; border: 2px solid #667eea; border-radius: 12px; background: rgba(102, 126, 234, 0.05);">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 18px; color: #667eea; margin: 0;">📝 批量添加用户</h3>
+            <button onclick="hideBulkAddForm()" style="background: none; border: none; font-size: 20px; cursor: pointer; color: #666;">✕</button>
+        </div>
+        <div style="margin-bottom: 20px;">
+            <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">📋 用户信息 (每行一个用户)</label>
+            <textarea id="bulkUsers" rows="8" style="width: 100%; padding: 12px; border: 2px solid #ddd; border-radius: 8px; font-size: 14px;" placeholder="格式：用户名,邮箱,密码,角色&#10;例如：&#10;user1,user1@example.com,password123,user&#10;user2,user2@example.com,password123,admin"></textarea>
+            <div style="font-size: 12px; color: #666; margin-top: 5px;">每行格式：用户名,邮箱,密码,角色(可选，默认为user)</div>
+        </div>
+        <div style="display: flex; gap: 15px;">
+            <button onclick="bulkAddUsers()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                ✅ 批量添加
+            </button>
+            <button onclick="hideBulkAddForm()" style="background: #e2e8f0; color: #333; padding: 12px 25px; border: none; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                ❌ 取消
+            </button>
+        </div>
     </div>
     
     <!-- 用户列表 -->
     <div>
-        <h3 style="margin-bottom: 15px; font-size: 18px;">用户列表</h3>
-        
-        <div style="margin-bottom: 15px;">
-            <input type="text" id="userSearchInput" placeholder="搜索用户..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px;" onkeyup="filterUsers()">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h3 style="font-size: 18px; color: #333; margin: 0;">📋 用户列表</h3>
+            <div style="display: flex; gap: 10px;">
+                <input type="text" id="userSearchInput" placeholder="🔍 搜索用户名或邮箱..." style="padding: 10px; border: 2px solid #ddd; border-radius: 8px; width: 250px;" onkeyup="filterUsers()">
+                <select id="roleFilter" onchange="filterUsers()" style="padding: 10px; border: 2px solid #ddd; border-radius: 8px;">
+                    <option value="">所有角色</option>
+                    <option value="admin">管理员</option>
+                    <option value="user">普通用户</option>
+                </select>
+            </div>
         </div>
         
-        <div style="overflow-x: auto;">
+        <div style="overflow-x: auto; border-radius: 8px; border: 1px solid #ddd;">
             <table style="width: 100%; border-collapse: collapse; text-align: left;" id="userTable">
                 <thead>
-                    <tr style="background: #f8f9fa;">
-                        <th style="padding: 12px; border-bottom: 1px solid #ddd;">ID</th>
-                        <th style="padding: 12px; border-bottom: 1px solid #ddd;">用户名</th>
-                        <th style="padding: 12px; border-bottom: 1px solid #ddd;">邮箱</th>
-                        <th style="padding: 12px; border-bottom: 1px solid #ddd;">角色</th>
-                        <th style="padding: 12px; border-bottom: 1px solid #ddd;">注册时间</th>
-                        <th style="padding: 12px; border-bottom: 1px solid #ddd;">上次登录</th>
-                        <th style="padding: 12px; border-bottom: 1px solid #ddd;">操作</th>
+                    <tr style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; font-size: 15px;">
+                        <th style="padding: 15px; border-bottom: 1px solid #ddd; font-weight: 600;">ID</th>
+                        <th style="padding: 15px; border-bottom: 1px solid #ddd; font-weight: 600;">用户名</th>
+                        <th style="padding: 15px; border-bottom: 1px solid #ddd; font-weight: 600;">邮箱</th>
+                        <th style="padding: 15px; border-bottom: 1px solid #ddd; font-weight: 600;">角色</th>
+                        <th style="padding: 15px; border-bottom: 1px solid #ddd; font-weight: 600;">注册时间</th>
+                        <th style="padding: 15px; border-bottom: 1px solid #ddd; font-weight: 600;">上次登录</th>
+                        <th style="padding: 15px; border-bottom: 1px solid #ddd; font-weight: 600;">操作</th>
                     </tr>
                 </thead>
                 <tbody>
                     {% for user in users %}
-                    <tr>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee;">{{ user.id }}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee;">{{ user.username }}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee;">{{ user.email }}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee;">
+                    <tr style="border-bottom: 1px solid #eee; font-size: 15px; color: #222; font-weight: 500; background: #fff; transition: background 0.2s;">
+                        <td style="padding: 15px;">{{ user.id }}</td>
+                        <td style="padding: 15px; font-weight: 600; color: #222;">{{ user.username }}</td>
+                        <td style="padding: 15px; color: #222;">{{ user.email }}</td>
+                        <td style="padding: 15px;">
                             {% if user.role == 'admin' %}
-                            <span style="background: #667eea; color: white; padding: 3px 8px; border-radius: 12px; font-size: 12px;">管理员</span>
+                            <span style="background: #667eea; color: white; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">管理员</span>
                             {% else %}
-                            <span style="background: #e2e8f0; color: #333; padding: 3px 8px; border-radius: 12px; font-size: 12px;">普通用户</span>
+                            <span style="background: #e2e8f0; color: #333; padding: 5px 12px; border-radius: 20px; font-size: 13px; font-weight: 600;">普通用户</span>
                             {% endif %}
                         </td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee;">{{ user.created_at }}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee;">{{ user.last_login or '从未登录' }}</td>
-                        <td style="padding: 12px; border-bottom: 1px solid #eee;">
-                            <div style="display: flex; gap: 5px;">
-                                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" style="text-decoration: none; background: #4299e1; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px;">编辑</a>
+                        <td style="padding: 15px; color: #666;">{{ user.created_at or '未知' }}</td>
+                        <td style="padding: 15px; color: #666;">{{ user.last_login or '从未登录' }}</td>
+                        <td style="padding: 15px;">
+                            <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                                <a href="{{ url_for('admin.edit_user', user_id=user.id) }}" style="text-decoration: none; background: #4299e1; color: white; padding: 6px 12px; border-radius: 6px; font-size: 13px; font-weight: 600;">编辑</a>
                                 {% if user.username != 'admin' %}
-                                <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" onsubmit="return confirm('确定要删除此用户吗？');">
-                                    <button type="submit" style="background: #e53e3e; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">删除</button>
+                                <form method="POST" action="{{ url_for('admin.delete_user', user_id=user.id) }}" onsubmit="return confirm('⚠️ 确定要删除用户 {{ user.username }} 吗？此操作不可恢复！');" style="display: inline;">
+                                    <button type="submit" style="background: #e53e3e; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">删除</button>
                                 </form>
                                 {% endif %}
-                                <form method="POST" action="{{ url_for('admin.reset_password', user_id=user.id) }}">
-                                    <button type="submit" style="background: #667eea; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">重置密码</button>
+                                <form method="POST" action="{{ url_for('admin.reset_password', user_id=user.id) }}" onsubmit="return confirm('确定要重置用户 {{ user.username }} 的密码吗？');" style="display: inline;">
+                                    <button type="submit" style="background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">重置密码</button>
                                 </form>
                             </div>
                         </td>
@@ -109,6 +166,42 @@
 </div>
 
 <script>
+function showAddUserForm() {
+    document.getElementById('addUserForm').style.display = 'block';
+    document.getElementById('bulkAddForm').style.display = 'none';
+}
+
+function hideAddUserForm() {
+    document.getElementById('addUserForm').style.display = 'none';
+}
+
+function showBulkAddForm() {
+    document.getElementById('bulkAddForm').style.display = 'block';
+    document.getElementById('addUserForm').style.display = 'none';
+}
+
+function hideBulkAddForm() {
+    document.getElementById('bulkAddForm').style.display = 'none';
+}
+
+function bulkAddUsers() {
+    const usersText = document.getElementById('bulkUsers').value;
+    if (!usersText.trim()) {
+        alert('请输入用户信息');
+        return;
+    }
+    
+    if (confirm('确定要批量添加这些用户吗？')) {
+        // 这里可以添加批量添加的逻辑
+        alert('批量添加功能开发中...');
+    }
+}
+
+function exportUsers() {
+    // 导出用户列表功能
+    alert('导出功能开发中...');
+}
+
 function filterUsers() {
     var input, filter, table, tr, td, i, txtValue;
     input = document.getElementById("userSearchInput");
@@ -116,17 +209,24 @@ function filterUsers() {
     table = document.getElementById("userTable");
     tr = table.getElementsByTagName("tr");
     
+    var roleFilter = document.getElementById("roleFilter").value;
+    
     // 从索引1开始，跳过表头
     for (i = 1; i < tr.length; i++) {
-        // 检查用户名和邮箱列
         let usernameCol = tr[i].getElementsByTagName("td")[1];
         let emailCol = tr[i].getElementsByTagName("td")[2];
+        let roleCol = tr[i].getElementsByTagName("td")[3];
         
-        if (usernameCol && emailCol) {
+        if (usernameCol && emailCol && roleCol) {
             let usernameValue = usernameCol.textContent || usernameCol.innerText;
             let emailValue = emailCol.textContent || emailCol.innerText;
+            let roleValue = roleCol.textContent || roleCol.innerText;
             
-            if (usernameValue.toUpperCase().indexOf(filter) > -1 || emailValue.toUpperCase().indexOf(filter) > -1) {
+            let matchesSearch = usernameValue.toUpperCase().indexOf(filter) > -1 || 
+                               emailValue.toUpperCase().indexOf(filter) > -1;
+            let matchesRole = !roleFilter || roleValue.toLowerCase().indexOf(roleFilter.toLowerCase()) > -1;
+            
+            if (matchesSearch && matchesRole) {
                 tr[i].style.display = "";
             } else {
                 tr[i].style.display = "none";
@@ -134,5 +234,10 @@ function filterUsers() {
         }
     }
 }
+
+// 页面加载时显示提示
+document.addEventListener('DOMContentLoaded', function() {
+    // 可以添加一些初始化逻辑
+});
 </script>
 {% endblock %} 

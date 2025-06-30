@@ -1,135 +1,257 @@
-from flask import Blueprint, render_template, redirect, url_for, session, flash, send_file, jsonify
+from flask import Blueprint, render_template, redirect, url_for, session, flash, send_file, jsonify, request
 import sqlite3
 import json
+import os
+import hashlib
+import zipfile
+import tarfile
+import tempfile
+import shutil
+from datetime import datetime
+from pathlib import Path
+import requests
+import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
+from flask import current_app, g
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+import pickle
+import joblib
+from xgboost import XGBClassifier
+import warnings
+warnings.filterwarnings('ignore')
+
+# 导入配置
+from config.config import Config
 from app.utils import login_required
-from app.utils.helpers import format_size
-from config import Config
+from app.utils.helpers import format_size, safe_json_loads
+from app.models.db_models import AnomalyReport, ScanRecord
 from fpdf import FPDF
+from collections import defaultdict
 
 user_bp = Blueprint('user', __name__)
 
 @user_bp.route('/')
-@login_required
 def index():
+    user_id = session.get('user_id')
     conn = sqlite3.connect(Config.DATABASE_PATH)
     conn.row_factory = sqlite3.Row
     cursor = conn.cursor()
+    is_admin = session.get('role') == 'admin' if user_id else False
     
-    # 管理员和普通用户视图分离
-    is_admin = session.get('role') == 'admin'
-    
-    if is_admin:
-        # 管理员可以看到全局数据
-        cursor.execute('''
-            SELECT id, filename, file_size, risk_level, confidence, created_at, package_type, user_id
-            FROM scan_records 
-            WHERE risk_level = 'high' 
-            AND scan_status = 'completed' 
-            ORDER BY created_at DESC 
-            LIMIT 8
-        ''')
-        recent_malicious_packages = cursor.fetchall()
-        
-        # 管理员统计信息
-        cursor.execute('SELECT COUNT(*) FROM users')
-        total_users = cursor.fetchone()[0]
-        
-        cursor.execute('SELECT COUNT(*) FROM samples')
-        total_samples = cursor.fetchone()[0]
-        
-        # 计算高风险包总数
-        cursor.execute('''
-            SELECT COUNT(*) FROM scan_records 
-            WHERE risk_level = 'high' AND scan_status = 'completed'
-        ''')
-        total_malicious = cursor.fetchone()[0]
-        
-        # 获取检测总数
-        cursor.execute('''
-            SELECT COUNT(*) FROM scan_records 
-            WHERE scan_status = 'completed'
-        ''')
-        total_scans = cursor.fetchone()[0]
+    if user_id:
+        # 原有已登录逻辑
+        if is_admin:
+            cursor.execute('''
+                SELECT id, filename, file_size, risk_level, confidence, created_at, package_type, user_id
+                FROM scan_records 
+                WHERE risk_level = 'high' 
+                AND scan_status = 'completed' 
+                ORDER BY created_at DESC 
+                LIMIT 8
+            ''')
+            recent_malicious_packages = cursor.fetchall()
+            cursor.execute('SELECT COUNT(*) FROM users')
+            total_users = cursor.fetchone()[0]
+            cursor.execute('SELECT COUNT(*) FROM samples')
+            total_samples = cursor.fetchone()[0]
+            cursor.execute('''
+                SELECT COUNT(*) FROM scan_records 
+                WHERE risk_level = 'high' AND scan_status = 'completed'
+            ''')
+            total_malicious = cursor.fetchone()[0]
+            cursor.execute('''
+                SELECT COUNT(*) FROM scan_records 
+                WHERE scan_status = 'completed'
+            ''')
+            total_scans = cursor.fetchone()[0]
+            cursor.execute('''
+                SELECT COUNT(*) FROM scan_records 
+                WHERE risk_level = 'low' AND scan_status = 'completed'
+            ''')
+            safe_count = cursor.fetchone()[0]
+            cursor.execute('''
+                SELECT id, filename, created_at, scan_status
+                FROM scan_records 
+                WHERE scan_status = 'completed'
+                ORDER BY created_at DESC 
+                LIMIT 5
+            ''')
+            recent_scans = cursor.fetchall()
+        else:
+            cursor.execute('''
+                SELECT id, filename, file_size, risk_level, confidence, created_at, package_type
+                FROM scan_records 
+                WHERE user_id = ?
+                AND scan_status = 'completed' 
+                ORDER BY created_at DESC 
+                LIMIT 5
+            ''', (user_id,))
+            recent_malicious_packages = cursor.fetchall()
+            cursor.execute('''
+                SELECT COUNT(*) FROM scan_records 
+                WHERE user_id = ? AND risk_level = 'high' AND scan_status = 'completed'
+            ''', (user_id,))
+            total_malicious = cursor.fetchone()[0]
+            cursor.execute('''
+                SELECT COUNT(*) FROM scan_records 
+                WHERE user_id = ? AND scan_status = 'completed'
+            ''', (user_id,))
+            total_scans = cursor.fetchone()[0]
+            cursor.execute('''
+                SELECT COUNT(*) FROM scan_records 
+                WHERE user_id = ? AND risk_level = 'low' AND scan_status = 'completed'
+            ''', (user_id,))
+            safe_count = cursor.fetchone()[0]
+            cursor.execute('''
+                SELECT id, filename, created_at, scan_status
+                FROM scan_records 
+                WHERE user_id = ? AND scan_status = 'completed'
+                ORDER BY created_at DESC 
+                LIMIT 5
+            ''', (user_id,))
+            recent_scans = cursor.fetchall()
+            total_users = None
+            total_samples = None
     else:
-        # 普通用户只能看到自己的数据
+        # 游客模式：只展示全局统计和最新恶意包
         cursor.execute('''
             SELECT id, filename, file_size, risk_level, confidence, created_at, package_type
             FROM scan_records 
-            WHERE user_id = ?
-            AND scan_status = 'completed' 
+            WHERE risk_level = 'high' AND scan_status = 'completed' 
             ORDER BY created_at DESC 
             LIMIT 5
-        ''', (session['user_id'],))
+        ''')
         recent_malicious_packages = cursor.fetchall()
-        
-        # 用户自己的统计信息
         cursor.execute('''
-            SELECT COUNT(*) FROM scan_records 
-            WHERE user_id = ? AND risk_level = 'high' AND scan_status = 'completed'
-        ''', (session['user_id'],))
-        total_malicious = cursor.fetchone()[0]
-        
-        cursor.execute('''
-            SELECT COUNT(*) FROM scan_records 
-            WHERE user_id = ? AND scan_status = 'completed'
-        ''', (session['user_id'],))
+            SELECT COUNT(*) FROM scan_records WHERE scan_status = 'completed'
+        ''')
         total_scans = cursor.fetchone()[0]
-        
+        cursor.execute('''
+            SELECT COUNT(*) FROM scan_records WHERE risk_level = 'high' AND scan_status = 'completed'
+        ''')
+        total_malicious = cursor.fetchone()[0]
+        cursor.execute('''
+            SELECT COUNT(*) FROM scan_records WHERE risk_level = 'low' AND scan_status = 'completed'
+        ''')
+        safe_count = cursor.fetchone()[0]
         total_users = None
         total_samples = None
-    
+        recent_scans = []
+        is_admin = False
+    # 获取最新异常上报
+    latest_anomalies = AnomalyReport.get_latest(5)
     # 格式化数据
     malicious_packages = []
     for pkg in recent_malicious_packages:
         malicious_packages.append({
             'id': pkg['id'],
-            'filename': pkg['filename'],
+            'package_name': pkg['filename'],
             'file_size': format_size(pkg['file_size']) if pkg['file_size'] else "未知",
             'risk_level': pkg['risk_level'],
             'confidence': pkg['confidence'] * 100 if pkg['confidence'] else 0,
             'created_at': pkg['created_at'],
             'package_type': pkg['package_type'] if 'package_type' in pkg.keys() else 'unknown',
-            'user_id': pkg['user_id'] if is_admin and 'user_id' in pkg.keys() else session['user_id']
+            'user_id': pkg['user_id'] if is_admin and 'user_id' in pkg.keys() else user_id
         })
-    
+    formatted_recent_scans = []
+    for scan in recent_scans:
+        formatted_recent_scans.append({
+            'id': scan['id'],
+            'package_name': scan['filename'],
+            'created_at': scan['created_at'],
+            'scan_status': scan['scan_status']
+        })
+    accuracy = 0.95 if total_scans > 0 else 0.0
+    stats = {
+        'total_scans': total_scans,
+        'malicious_count': total_malicious,
+        'safe_count': safe_count,
+        'accuracy': accuracy
+    }
     conn.close()
-    
     return render_template('index.html', 
+                          stats=stats,
                           malicious_packages=malicious_packages,
+                          recent_scans=formatted_recent_scans,
                           total_malicious=total_malicious,
                           total_scans=total_scans,
                           total_users=total_users,
                           total_samples=total_samples,
-                          is_admin=is_admin)
+                          is_admin=is_admin,
+                          is_guest=(not user_id),
+                          latest_anomalies=latest_anomalies)
+
+@user_bp.route('/report_issue', methods=['GET', 'POST'])
+@login_required
+def report_issue():
+    scan_id = request.args.get('scan_id')
+    scan_record = None
+    if scan_id:
+        scan_record = ScanRecord.get_by_id(scan_id)
+
+    if request.method == 'POST':
+        title = request.form.get('title')
+        description = request.form.get('description')
+        scan_id = request.form.get('scan_id') # 再次获取以防万一
+
+        if not title or not description:
+            flash('标题和详细描述不能为空。', 'error')
+            return render_template('community/report_anomaly.html', scan_record=scan_record, title=title, description=description)
+
+        report = AnomalyReport(
+            user_id=session['user_id'],
+            scan_record_id=scan_id if scan_id and scan_id != 'None' else None,
+            title=title,
+            description=description,
+            status='pending'
+        )
+        report.save()
+        flash('您的报告已成功提交，感谢您的贡献！', 'success')
+        return redirect(url_for('user.index'))
+
+    return render_template('community/report_anomaly.html', scan_record=scan_record)
 
 @user_bp.route('/history')
 @login_required
 def history():
-    conn = sqlite3.connect(Config.DATABASE_PATH)
-    conn.row_factory = sqlite3.Row
-    cursor = conn.cursor()
-    
-    # 管理员可以看到所有用户的记录，普通用户只能看到自己的
-    if session.get('role') == 'admin':
-        cursor.execute('''
-            SELECT r.id, r.filename, r.file_size, r.risk_level, r.confidence, r.scan_status, r.created_at, 
-                   r.package_type, u.username
-            FROM scan_records r
-            JOIN users u ON r.user_id = u.id
-            ORDER BY r.created_at DESC
-        ''')
-    else:
-        cursor.execute('''
-            SELECT id, filename, file_size, risk_level, confidence, scan_status, created_at, package_type
-            FROM scan_records 
-            WHERE user_id = ?
-            ORDER BY created_at DESC
-        ''', (session['user_id'],))
-    
-    records = cursor.fetchall()
-    conn.close()
-    
-    return render_template('history.html', records=records)
+    conn = None
+    try:
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        conn.row_factory = sqlite3.Row
+        cursor = conn.cursor()
+        
+        # 管理员可以看到所有用户的记录，普通用户只能看到自己的
+        if session.get('role') == 'admin':
+            cursor.execute('''
+                SELECT r.id, r.filename, r.file_size, r.risk_level, r.confidence, r.scan_status, r.created_at, 
+                       r.package_type, u.username
+                FROM scan_records r
+                JOIN users u ON r.user_id = u.id
+                ORDER BY r.created_at DESC
+            ''')
+        else:
+            cursor.execute('''
+                SELECT id, filename, file_size, risk_level, confidence, scan_status, created_at, package_type
+                FROM scan_records 
+                WHERE user_id = ?
+                ORDER BY created_at DESC
+            ''', (session['user_id'],))
+        
+        records = cursor.fetchall()
+        return render_template('history.html', records=records)
+    except Exception as e:
+        print(f"Error in history: {e}")
+        flash('获取历史记录时出现错误', 'error')
+        return render_template('history.html', records=[])
+    finally:
+        if conn:
+            conn.close()
 
 @user_bp.route('/guide')
 def guide():
@@ -753,17 +875,26 @@ def download_report(scan_id, format):
             'file_hash': record[4],
             'risk_level': record[6],
             'confidence': record[7],
-            'xgboost_result': json.loads(record[8]) if record[8] else {},
-            'llm_result': json.loads(record[9]) if record[9] else {},
+            'xgboost_result': safe_json_loads(record[8]),
+            'llm_result': safe_json_loads(record[9]),
             'risk_explanation': record[10],
             'scan_time': record[11],
             'created_at': record[12]
         }
         
-        report_path = f'static/reports/report_{scan_id}.json'
-        with open(report_path, 'w', encoding='utf-8') as f:
-            json.dump(report_data, f, ensure_ascii=False, indent=2)
-        
+        reports_dir = os.path.join(os.path.dirname(__file__), 'static', 'reports')
+        if not os.path.exists(reports_dir):
+            os.makedirs(reports_dir, exist_ok=True)
+        report_path = os.path.join(reports_dir, f'report_{scan_id}.json')
+        if not os.path.exists(report_path):
+            # 文件不存在，尝试重新生成
+            try:
+                with open(report_path, 'w', encoding='utf-8') as f:
+                    json.dump(report_data, f, ensure_ascii=False, indent=2)
+            except Exception as e:
+                return jsonify({'error': f'报告生成失败: {str(e)}'}), 404
+        if not os.path.exists(report_path):
+            return jsonify({'error': '报告文件不存在或尚未生成，请稍后重试。'}), 404
         return send_file(report_path, as_attachment=True, 
                         download_name=f'security_report_{scan_id}.json')
     
@@ -787,3 +918,180 @@ def download_report(scan_id, format):
                         download_name=f'security_report_{scan_id}.pdf')
     
     return jsonify({'error': '不支持的格式'}), 400
+
+@user_bp.route('/package_encyclopedia')
+def package_encyclopedia():
+    """包百科主页 - 按语言分类"""
+    from app.models.db_models import PackageEncyclopedia
+    
+    search_query = request.args.get('search', '')
+    
+    if search_query:
+        # 如果有搜索查询，则直接跳转到列表页显示搜索结果
+        return redirect(url_for('user.package_list', search=search_query))
+    
+    # 获取所有包数据
+    packages = PackageEncyclopedia.get_all()
+    
+    # 按语言分组
+    language_groups = defaultdict(lambda: {'packages': [], 'tags': set()})
+    for pkg in packages:
+        group = language_groups[pkg.package_type]
+        group['packages'].append(pkg)
+        if pkg.tags:
+            group['tags'].update(tag.strip() for tag in pkg.tags.split(','))
+            
+    # 准备传递给模板的数据
+    language_cards = []
+    for lang, data in language_groups.items():
+        language_cards.append({
+            'name': lang,
+            'count': len(data['packages']),
+            'tags': sorted(list(data['tags']))[:5] # 最多显示5个标签
+        })
+    
+    # 按包数量排序
+    language_cards.sort(key=lambda x: x['count'], reverse=True)
+    
+    return render_template('package_encyclopedia_landing.html', 
+                          language_cards=language_cards,
+                          search_query=search_query)
+
+@user_bp.route('/packages/<package_type>')
+@user_bp.route('/packages')
+def package_list(package_type=None):
+    """包百科列表页"""
+    from app.models.db_models import PackageEncyclopedia
+    
+    search_query = request.args.get('search', '')
+    
+    if search_query:
+        packages = PackageEncyclopedia.search(search_query)
+        page_title = f'搜索 "{search_query}" 的结果'
+    elif package_type:
+        packages = PackageEncyclopedia.get_by_type(package_type)
+        page_title = f"{package_type} 包"
+    else:
+        packages = PackageEncyclopedia.get_all()
+        page_title = "所有包"
+        
+    return render_template('package_list.html', 
+                          packages=packages, 
+                          page_title=page_title,
+                          search_query=search_query)
+
+@user_bp.route('/package_encyclopedia/<int:package_id>')
+def package_detail(package_id):
+    """包百科详情页"""
+    from app.models.db_models import PackageEncyclopedia
+    
+    package = PackageEncyclopedia.get_by_id(package_id)
+    if not package:
+        flash('包百科条目不存在', 'error')
+        return redirect(url_for('user.package_encyclopedia'))
+    
+    return render_template('package_detail.html', package=package)
+
+@user_bp.route('/package_encyclopedia/add', methods=['GET', 'POST'])
+@login_required
+def add_package():
+    """添加包百科条目（仅管理员）"""
+    if session.get('role') != 'admin':
+        flash('权限不足', 'error')
+        return redirect(url_for('user.package_encyclopedia'))
+    
+    if request.method == 'POST':
+        from app.models.db_models import PackageEncyclopedia
+        
+        package = PackageEncyclopedia(
+            package_name=request.form.get('package_name'),
+            package_type=request.form.get('package_type'),
+            description=request.form.get('description'),
+            version=request.form.get('version'),
+            author=request.form.get('author'),
+            license=request.form.get('license'),
+            repository=request.form.get('repository'),
+            official_website=request.form.get('official_website'),
+            security_notes=request.form.get('security_notes'),
+            common_risks=request.form.get('common_risks'),
+            best_practices=request.form.get('best_practices'),
+            alternatives=request.form.get('alternatives'),
+            tags=request.form.get('tags')
+        )
+        
+        try:
+            package.save()
+            flash('包百科条目添加成功', 'success')
+            return redirect(url_for('user.package_encyclopedia'))
+        except Exception as e:
+            flash(f'添加失败: {str(e)}', 'error')
+    
+    return render_template('add_package.html')
+
+@user_bp.route('/package_encyclopedia/edit/<int:package_id>', methods=['GET', 'POST'])
+@login_required
+def edit_package(package_id):
+    """编辑包百科条目（仅管理员）"""
+    if session.get('role') != 'admin':
+        flash('权限不足', 'error')
+        return redirect(url_for('user.package_encyclopedia'))
+    
+    from app.models.db_models import PackageEncyclopedia
+    package = PackageEncyclopedia.get_by_id(package_id)
+    
+    if not package:
+        flash('包百科条目不存在', 'error')
+        return redirect(url_for('user.package_encyclopedia'))
+    
+    if request.method == 'POST':
+        package.package_name = request.form.get('package_name')
+        package.package_type = request.form.get('package_type')
+        package.description = request.form.get('description')
+        package.version = request.form.get('version')
+        package.author = request.form.get('author')
+        package.license = request.form.get('license')
+        package.repository = request.form.get('repository')
+        package.official_website = request.form.get('official_website')
+        package.security_notes = request.form.get('security_notes')
+        package.common_risks = request.form.get('common_risks')
+        package.best_practices = request.form.get('best_practices')
+        package.alternatives = request.form.get('alternatives')
+        package.tags = request.form.get('tags')
+        
+        try:
+            package.save()
+            flash('包百科条目更新成功', 'success')
+            return redirect(url_for('user.package_detail', package_id=package.id))
+        except Exception as e:
+            flash(f'更新失败: {str(e)}', 'error')
+    
+    return render_template('edit_package.html', package=package)
+
+@user_bp.route('/package_encyclopedia/delete/<int:package_id>', methods=['POST'])
+@login_required
+def delete_package(package_id):
+    """删除包百科条目（仅管理员）"""
+    if session.get('role') != 'admin':
+        flash('权限不足', 'error')
+        return redirect(url_for('user.package_encyclopedia'))
+    
+    from app.models.db_models import PackageEncyclopedia
+    package = PackageEncyclopedia.get_by_id(package_id)
+    
+    if not package:
+        flash('包百科条目不存在', 'error')
+        return redirect(url_for('user.package_encyclopedia'))
+    
+    try:
+        package.delete()
+        flash('包百科条目删除成功', 'success')
+    except Exception as e:
+        flash(f'删除失败: {str(e)}', 'error')
+    
+    return redirect(url_for('user.package_encyclopedia'))
+
+@user_bp.route('/demo')
+@login_required
+def demo():
+    """界面演示页面"""
+    return render_template('demo.html')

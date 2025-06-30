@@ -6,7 +6,7 @@ class CsvFeatureExtractor:
     def __init__(self, csv_path=None):
         # 自动读取csv第一行，获取特征名顺序
         if csv_path is None:
-            csv_path = os.path.join(os.path.dirname(__file__), '../../npm_feature_extracted.csv')
+            csv_path = os.path.join(os.path.dirname(__file__), '../../data/datasets/npm_feature_extracted.csv')
         with open(csv_path, 'r', encoding='utf-8') as f:
             reader = csv.reader(f)
             header = next(reader)

@@ -13,8 +13,29 @@ import joblib
 from app.utils import admin_required
 from app.services.extractor import FeatureExtractor
 from app.services.classifier import SecurityClassifier
-from config import Config
-from app.utils.helpers import detect_package_type
+from config.config import Config
+from app.utils.helpers import detect_package_type, safe_json_loads
+import sys
+import subprocess
+import zipfile
+import tarfile
+import tempfile
+import shutil
+from pathlib import Path
+import requests
+import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
+from flask import current_app, g
+import pandas as pd
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.metrics import classification_report, confusion_matrix
+import pickle
+from xgboost import XGBClassifier
+import warnings
+from app.models.db_models import AnomalyReport
+warnings.filterwarnings('ignore')
 
 admin_bp = Blueprint('admin', __name__, url_prefix='/admin')
 
@@ -223,7 +244,7 @@ def train_with_samples():
     y = []
     for features, sample_type in samples:
         try:
-            feature_dict = json.loads(features)
+            feature_dict = safe_json_loads(features)
             X.append(list(feature_dict.values()))
             y.append(1 if sample_type == 'malware' else 0)
         except Exception as e:
@@ -506,3 +527,49 @@ def settings():
     conn.close()
     
     return render_template('settings.html', settings=settings)
+
+@admin_bp.route('/crawl_packages', methods=['GET', 'POST'])
+@admin_required
+def crawl_packages():
+    result = None
+    if request.method == 'POST':
+        pkg_type = request.form.get('pkg_type', 'npm')
+        limit = request.form.get('limit', 5)
+        try:
+            limit = int(limit)
+        except Exception:
+            limit = 5
+        # 构造命令
+        script_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'package_crawler.py')
+        if pkg_type not in ['npm', 'pypi']:
+            pkg_type = 'npm'
+        cmd = [sys.executable, script_path, pkg_type, str(limit)]
+        try:
+            proc = subprocess.run(cmd, capture_output=True, text=True, timeout=300)
+            result = proc.stdout + '\n' + proc.stderr
+        except Exception as e:
+            result = f'抓取失败: {e}'
+    return render_template('crawl_packages.html', result=result)
+
+@admin_bp.route('/anomalies')
+@admin_required
+def anomaly_management():
+    anomalies = AnomalyReport.get_all()
+    return render_template('admin/anomaly_management.html', anomalies=anomalies)
+
+@admin_bp.route('/anomalies/resolve/<int:anomaly_id>', methods=['POST'])
+@admin_required
+def resolve_anomaly(anomaly_id):
+    anomaly = None
+    # 查找异常
+    for a in AnomalyReport.get_all():
+        if a.id == anomaly_id:
+            anomaly = a
+            break
+    if anomaly:
+        anomaly.status = 'resolved'
+        anomaly.save()
+        flash('异常已标记为已处理', 'success')
+    else:
+        flash('未找到该异常', 'error')
+    return redirect(url_for('admin.anomaly_management'))

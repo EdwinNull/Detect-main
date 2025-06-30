@@ -1,0 +1,46 @@
+{% extends "admin.html" %}
+{% block content %}
+<div class="container" style="max-width: 900px; margin: 40px auto;">
+    <h2 style="margin-bottom: 25px; color: #ef4444;">异常上报管理</h2>
+    <table style="width: 100%; border-collapse: collapse; background: #fff; border-radius: 10px; overflow: hidden;">
+        <thead style="background: #f8fafc;">
+            <tr>
+                <th style="padding: 12px; border-bottom: 1px solid #eee;">ID</th>
+                <th style="padding: 12px; border-bottom: 1px solid #eee;">标题</th>
+                <th style="padding: 12px; border-bottom: 1px solid #eee;">描述</th>
+                <th style="padding: 12px; border-bottom: 1px solid #eee;">上报人</th>
+                <th style="padding: 12px; border-bottom: 1px solid #eee;">时间</th>
+                <th style="padding: 12px; border-bottom: 1px solid #eee;">状态</th>
+                <th style="padding: 12px; border-bottom: 1px solid #eee;">操作</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for anomaly in anomalies %}
+            <tr style="border-bottom: 1px solid #eee;">
+                <td style="padding: 12px;">{{ anomaly.id }}</td>
+                <td style="padding: 12px;">{{ anomaly.title }}</td>
+                <td style="padding: 12px; max-width: 250px; white-space: pre-line; word-break: break-all;">{{ anomaly.description|truncate(60) }}</td>
+                <td style="padding: 12px;">{{ anomaly.user.username if anomaly.user else '未知' }}</td>
+                <td style="padding: 12px;">{{ anomaly.created_at }}</td>
+                <td style="padding: 12px;">
+                    {% if anomaly.status == 'pending' %}
+                        <span style="color: #ef4444; font-weight: bold;">待处理</span>
+                    {% else %}
+                        <span style="color: #10b981; font-weight: bold;">已处理</span>
+                    {% endif %}
+                </td>
+                <td style="padding: 12px;">
+                    {% if anomaly.status == 'pending' %}
+                    <form method="POST" action="{{ url_for('admin.resolve_anomaly', anomaly_id=anomaly.id) }}" style="display:inline;">
+                        <button type="submit" style="background: #10b981; color: white; border: none; padding: 6px 14px; border-radius: 6px; cursor: pointer; font-size: 13px; font-weight: 600;">标记为已处理</button>
+                    </form>
+                    {% else %}
+                    <span style="color: #aaa;">-</span>
+                    {% endif %}
+                </td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+</div>
+{% endblock %} 

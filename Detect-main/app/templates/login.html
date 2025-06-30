@@ -159,6 +159,17 @@
         .register-link a:hover {
             text-decoration: underline;
         }
+        
+        .btn-outline {
+            background: transparent;
+            border: 2px solid #667eea;
+            color: #667eea;
+        }
+        
+        .btn-outline:hover {
+            background: #667eea;
+            color: white;
+        }
     </style>
 </head>
 <body>
@@ -196,6 +207,7 @@
         <div class="register-link">
             没有账号？<a href="{{ url_for('auth.register') }}">注册</a>
         </div>
+        <a href="{{ url_for('user.index') }}" class="btn btn-outline" style="margin-top:18px;display:block;text-align:center;">返回游客模式</a>
         
         <div class="demo-info">
             <div class="demo-title">演示账户</div>

@@ -192,6 +192,15 @@
         background: #eee;
     }
     
+    .btn-danger {
+        background: #ff4757;
+        color: white;
+    }
+    
+    .btn-danger:hover {
+        background: #e03e4d;
+    }
+    
     .btn-icon {
         width: 28px;
         height: 28px;
@@ -391,13 +400,9 @@
                     <div style="font-weight: 600; color: #333;">{{ record[1] }}</div>
                 </td>
                 <td>
-                    {% if record[7] == 'pypi' %}
-                        <span class="type-badge type-pypi">PyPI</span>
-                    {% elif record[7] == 'npm' %}
-                        <span class="type-badge type-npm">npm</span>
-                    {% else %}
-                        <span class="type-badge type-unknown">未知</span>
-                    {% endif %}
+                    <span class="type-badge type-{{ record[7]|lower if record[7] else 'unknown' }}">
+                        {{ record[7]|upper if record[7] else '未知' }}
+                    </span>
                 </td>
                 <td>{{ "%.1f"|format(record[2] / 1024 / 1024) }} MB</td>
                 <td>
@@ -456,6 +461,7 @@
                                 <i class="delete-icon">🗑️</i>
                             </button>
                         {% endif %}
+                        <a href="{{ url_for('community.report_anomaly', scan_id=record.id) }}" class="btn-small btn-danger">上报</a>
                     </div>
                 </td>
             </tr>

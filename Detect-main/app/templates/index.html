@@ -8,7 +8,7 @@
         padding: 0 20px;
         display: grid;
         grid-template-columns: 1fr;
-        grid-gap: 20px;
+        grid-gap: 25px;
     }
     
     @media (min-width: 768px) {
@@ -17,99 +17,139 @@
         }
     }
     
+    @media (min-width: 992px) {
+        .dashboard-container {
+            grid-template-columns: 2fr 1fr;
+        }
+    }
+    
     .stats-container {
         display: grid;
         grid-template-columns: 1fr 1fr;
-        grid-gap: 15px;
-        margin-bottom: 20px;
+        grid-gap: 20px;
+        margin-bottom: 25px;
     }
     
     .stat-card {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 20px;
-        border-radius: 15px;
-        box-shadow: 0 10px 30px rgba(0,0,0,0.08);
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(102,126,234,0.08);
+        color: #667eea;
+        margin-bottom: 18px;
         text-align: center;
+        border: none;
+        padding: 32px 0 24px 0;
     }
     
     .stat-value {
-        font-size: 28px;
-        font-weight: 700;
-        margin: 10px 0;
+        font-size: 2.5em;
+        font-weight: bold;
+        color: #667eea;
+        margin: 15px 0 8px 0;
+        text-shadow: none;
+        letter-spacing: 1px;
     }
     
     .stat-label {
-        color: #666;
-        font-size: 14px;
+        color: #888;
+        font-size: 15px;
+        margin-top: 0;
+        letter-spacing: 0.5px;
     }
     
     .quick-guide-small-btn {
-        display: inline-block;
-        padding: 8px 15px;
-        background: rgba(75, 108, 183, 0.1);
-        color: #4b6cb7;
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        border: none;
+        color: #fff;
+        font-weight: 800;
+        font-size: 17px;
+        border-radius: 12px;
+        padding: 10px 28px;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.08);
+        transition: background 0.2s, filter 0.2s;
         text-decoration: none;
-        border-radius: 6px;
-        font-weight: 600;
-        font-size: 14px;
-        transition: all 0.2s ease;
-        border: 1px solid #4b6cb7;
+        margin: 0 auto;
     }
     
     .quick-guide-small-btn:hover {
-        background: rgba(75, 108, 183, 0.2);
-        transform: translateY(-2px);
+        filter: brightness(1.08);
+        text-decoration: none;
     }
     
     .guide-icon {
-        font-size: 15px;
-        margin-right: 5px;
+        font-size: 20px;
+        margin-right: 4px;
+        display: flex;
+        align-items: center;
     }
     
     .malicious-packages {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 25px;
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(102,126,234,0.08);
+        color: #222;
+        margin-bottom: 24px;
+        border: none;
+        padding: 36px 28px 32px 28px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .malicious-packages::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #3a8fff 60%, #ff9800 100%);
     }
     
     .section-header {
-        margin-bottom: 20px;
-        padding-bottom: 15px;
-        border-bottom: 1px solid #eee;
+        margin-bottom: 25px;
+        padding-bottom: 20px;
+        border-bottom: 2px solid var(--border-color);
     }
     
     .section-header h2 {
-        color: #333;
+        color: #667eea;
         font-size: 22px;
-        margin-bottom: 8px;
+        font-weight: 800;
+        margin-bottom: 6px;
+        letter-spacing: 1px;
     }
     
     .section-header p {
-        color: #666;
-        font-size: 14px;
+        color: #888;
+        font-size: 15px;
+        margin-bottom: 18px;
+        margin-top: 0;
     }
     
     .package-list {
-        margin-bottom: 20px;
+        margin-bottom: 25px;
     }
     
     .package-item {
-        background: rgba(248, 249, 255, 0.7);
+        background: rgba(30, 41, 59, 0.8);
         border-radius: 12px;
-        padding: 15px;
-        margin-bottom: 15px;
+        padding: 18px;
+        margin-bottom: 18px;
         display: flex;
         justify-content: space-between;
         align-items: center;
-        transition: transform 0.2s ease;
+        transition: all 0.3s ease;
+        border: 1px solid var(--border-color);
+        backdrop-filter: blur(10px);
     }
     
     .package-item:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 5px 15px rgba(0,0,0,0.05);
+        transform: translateY(-3px);
+        box-shadow: var(--shadow-glow);
+        border-color: var(--secondary-blue);
     }
     
     .package-info {
@@ -118,433 +158,569 @@
     
     .package-name {
         font-weight: 600;
-        margin-bottom: 5px;
-        color: #333;
+        margin-bottom: 8px;
+        color: var(--text-primary);
+        font-size: 16px;
     }
     
     .package-meta {
-        color: #666;
+        color: var(--text-secondary);
         font-size: 13px;
         display: flex;
-        gap: 15px;
+        gap: 20px;
     }
     
     .risk-badge {
         display: inline-block;
-        padding: 5px 12px;
+        padding: 6px 14px;
         border-radius: 20px;
         font-size: 12px;
         font-weight: 600;
-        color: white;
+        color: var(--text-primary);
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
     
     .risk-high {
-        background: #ff4757;
+        background: #ef4444;
+        color: #fff;
+        border-radius: 16px;
+        padding: 4px 16px;
+        font-weight: 700;
+        font-size: 1rem;
+        box-shadow: none;
+    }
+    
+    .risk-medium {
+        background: var(--warning-yellow);
+        box-shadow: 0 2px 8px rgba(245, 158, 11, 0.3);
+    }
+    
+    .risk-low {
+        background: var(--success-green);
+        box-shadow: 0 2px 8px rgba(16, 185, 129, 0.3);
     }
     
     .upload-container {
-        background: rgba(255, 255, 255, 0.95);
-        backdrop-filter: blur(10px);
-        padding: 25px;
-        border-radius: 20px;
-        box-shadow: 0 20px 60px rgba(0,0,0,0.1);
+        background: #fff;
+        border-radius: 16px;
+        box-shadow: 0 4px 20px rgba(102,126,234,0.08);
+        color: #222;
+        padding: 36px 28px 32px 28px;
+        margin-bottom: 24px;
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .upload-container::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: linear-gradient(90deg, #3a8fff 60%, #ff9800 100%);
     }
     
     .upload-area {
-        border: 2px dashed #667eea;
-        border-radius: 15px;
-        padding: 40px 20px;
+        border: 2.5px dashed #b3baf7;
+        border-radius: 18px;
+        background: #f6f8fe;
+        padding: 38px 18px 28px 18px;
+        margin-bottom: 28px;
         text-align: center;
-        background: rgba(248, 249, 255, 0.5);
-        margin-bottom: 20px;
-        cursor: pointer;
-        transition: all 0.3s ease;
+        transition: border 0.2s, background 0.2s;
     }
     
-    .upload-area:hover {
+    .upload-area:hover, .upload-area.dragover {
         border-color: #764ba2;
-        background: rgba(240, 243, 255, 0.8);
-    }
-    
-    .upload-area.dragover {
-        border-color: #764ba2;
-        background: rgba(240, 243, 255, 0.8);
-        transform: scale(1.02);
+        background: #f0f4ff;
     }
     
     .upload-icon {
-        font-size: 48px;
-        color: #667eea;
-        margin-bottom: 20px;
+        font-size: 54px;
+        color: #a3aaf7;
+        margin-bottom: 12px;
     }
     
     .upload-text {
-        font-size: 18px;
-        color: #333;
+        font-size: 20px;
+        color: #222;
         margin-bottom: 10px;
+        font-weight: 800;
+        letter-spacing: 1px;
     }
     
     .upload-hint {
-        color: #666;
-        font-size: 14px;
+        color: #b0b6c7;
+        font-size: 13px;
+        margin-bottom: 0;
+        margin-top: 2px;
+        line-height: 1.5;
     }
     
     .file-input {
         display: none;
     }
     
-    .selected-file {
-        background: rgba(232, 245, 232, 0.9);
-        border: 1px solid #4caf50;
-        border-radius: 10px;
-        padding: 20px;
-        margin-bottom: 20px;
-        display: none;
+    .upload-btn {
+        display: block;
+        width: 100%;
+        background: linear-gradient(90deg, #667eea 0%, #764ba2 100%);
+        color: #fff;
+        font-weight: 700;
+        border: none;
+        border-radius: 12px;
+        font-size: 17px;
+        padding: 13px 0;
+        margin-top: 18px;
+        box-shadow: 0 2px 8px rgba(102,126,234,0.08);
+        transition: background 0.2s, box-shadow 0.2s;
     }
     
-    .file-info {
+    .upload-btn:hover {
+        filter: brightness(1.08);
+    }
+    
+    .upload-btn:disabled {
+        background: var(--border-color);
+        cursor: not-allowed;
+        transform: none;
+        box-shadow: none;
+    }
+    
+    .upload-progress {
+        margin-top: 20px;
+        background: rgba(15, 23, 42, 0.5);
+        border-radius: 10px;
+        overflow: hidden;
+        border: 1px solid var(--border-color);
+    }
+    
+    .progress-bar {
+        height: 8px;
+        background: var(--gradient-primary);
+        transition: width 0.3s ease;
+        border-radius: 4px;
+    }
+    
+    .progress-text {
+        text-align: center;
+        margin-top: 10px;
+        color: var(--text-secondary);
+        font-size: 14px;
+    }
+    
+    .recent-scans {
+        background: var(--card-bg);
+        backdrop-filter: blur(15px);
+        padding: 30px;
+        border-radius: 20px;
+        box-shadow: var(--shadow-card);
+        border: 1px solid var(--border-color);
+        position: relative;
+        overflow: hidden;
+    }
+    
+    .recent-scans::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        right: 0;
+        height: 4px;
+        background: var(--gradient-primary);
+    }
+    
+    .scan-item {
+        background: rgba(30, 41, 59, 0.8);
+        border-radius: 12px;
+        padding: 18px;
+        margin-bottom: 15px;
+        border: 1px solid var(--border-color);
+        transition: all 0.3s ease;
+        backdrop-filter: blur(10px);
+    }
+    
+    .scan-item:hover {
+        transform: translateY(-2px);
+        border-color: var(--secondary-blue);
+        box-shadow: 0 4px 12px rgba(59, 130, 246, 0.2);
+    }
+    
+    .scan-info {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 10px;
+    }
+    
+    .scan-name {
+        font-weight: 600;
+        color: var(--text-primary);
+        font-size: 16px;
+    }
+    
+    .scan-time {
+        color: var(--text-secondary);
+        font-size: 13px;
+    }
+    
+    .scan-status {
         display: flex;
         align-items: center;
-        gap: 15px;
+        gap: 10px;
     }
     
-    .file-icon {
-        font-size: 24px;
-        color: #4caf50;
-    }
-    
-    .file-details h4 {
-        color: #333;
-        margin-bottom: 5px;
-    }
-    
-    .file-details p {
-        color: #666;
-        font-size: 14px;
-    }
-    
-    .action-buttons {
-        display: flex;
-        gap: 15px;
-        justify-content: center;
-    }
-    
-    .btn-large {
-        padding: 12px 30px;
-        font-size: 16px;
-        border-radius: 8px;
-        border: none;
-        cursor: pointer;
-        transition: all 0.3s ease;
-        text-decoration: none;
-        display: inline-block;
-    }
-    
-    .btn-primary {
-        background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-        color: white;
-    }
-    
-    .btn-primary:hover {
-        transform: translateY(-2px);
-        box-shadow: 0 10px 25px rgba(102, 126, 234, 0.3);
-    }
-    
-    .btn-secondary {
-        background: #f5f5f5;
-        color: #666;
-    }
-    
-    .btn-secondary:hover {
-        background: #eee;
-    }
-    
-    .empty-state {
-        padding: 30px;
-        text-align: center;
-        color: #666;
-    }
-    
-    .empty-icon {
-        font-size: 40px;
-        margin-bottom: 15px;
-        opacity: 0.5;
-    }
-    
-    .more-link {
-        display: inline-block;
-        padding: 8px 15px;
-        color: #667eea;
-        text-decoration: none;
-        border: 1px solid #667eea;
-        border-radius: 6px;
-        font-size: 14px;
-        font-weight: 500;
-        transition: all 0.3s ease;
-    }
-    
-    .more-link:hover {
-        background: #667eea;
-        color: white;
-    }
-    
-    .center-text {
-        text-align: center;
-        margin-top: 15px;
-    }
-    
-    .loading {
-        display: none;
-        text-align: center;
-        margin-top: 20px;
-    }
-    
-    .spinner {
-        display: inline-block;
-        width: 20px;
-        height: 20px;
-        border: 3px solid #f3f3f3;
-        border-top: 3px solid #667eea;
-        border-radius: 50%;
-        animation: spin 1s linear infinite;
-        margin-right: 10px;
-    }
-    
-    @keyframes spin {
-        0% { transform: rotate(0deg); }
-        100% { transform: rotate(360deg); }
-    }
-    
-    .type-badge {
-        display: inline-block;
-        margin-left: 8px;
-        padding: 2px 10px;
+    .status-badge {
+        padding: 4px 10px;
         border-radius: 12px;
-        font-size: 12px;
+        font-size: 11px;
         font-weight: 600;
-        color: #fff;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
     }
-    .type-pypi { background: #3776ab; }
-    .type-npm { background: #cb3837; }
-    .type-unknown { background: #888; }
+    
+    .status-completed {
+        background: var(--success-green);
+        color: var(--text-primary);
+    }
+    
+    .status-processing {
+        background: var(--warning-yellow);
+        color: var(--text-primary);
+    }
+    
+    .status-failed {
+        background: var(--danger-red);
+        color: var(--text-primary);
+    }
+    
+    .view-btn {
+        background: transparent;
+        color: var(--secondary-blue);
+        border: 1px solid var(--secondary-blue);
+        padding: 6px 12px;
+        border-radius: 6px;
+        font-size: 12px;
+        text-decoration: none;
+        transition: all 0.3s ease;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+    
+    .view-btn:hover {
+        background: var(--secondary-blue);
+        color: var(--text-primary);
+        transform: translateY(-1px);
+    }
+    
+    @media (max-width: 768px) {
+        .dashboard-container {
+            grid-template-columns: 1fr;
+            padding: 0 15px;
+        }
+        
+        .stats-container {
+            grid-template-columns: 1fr;
+        }
+        
+        .upload-area {
+            padding: 30px 20px;
+        }
+        
+        .upload-icon {
+            font-size: 40px;
+        }
+        
+        .upload-text {
+            font-size: 18px;
+        }
+    }
 </style>
 {% endblock %}
 
 {% block content %}
 <div class="dashboard-container">
-    <!-- 快速上手按钮 - 左上角 -->
-    <div style="grid-column: span 2; text-align: left; margin-bottom: 15px;">
-        <a href="{{ url_for('user.guide') }}" class="quick-guide-small-btn">
-            <i class="guide-icon">📘</i> 快速上手
-        </a>
-    </div>
-    
-    <!-- 统计信息 -->
-    <div class="stats-container" style="grid-column: span 2;">
-        <div class="stat-card">
-            <div class="stat-value">{{ total_scans }}</div>
-            <div class="stat-label">总检测次数</div>
-        </div>
-        <div class="stat-card">
-            <div class="stat-value">{{ total_malicious }}</div>
-            <div class="stat-label">已检测恶意包</div>
-        </div>
-    </div>
-    
-    <!-- 恶意包列表 -->
-    <div class="malicious-packages">
-        <div class="section-header">
-            <h2>最近检测到的恶意包</h2>
-            <p>最近检测到的高风险开源组件包</p>
+    <div class="main-content">
+        <div class="stats-container">
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.total_scans }}</div>
+                <div class="stat-label">总扫描次数</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.malicious_count }}</div>
+                <div class="stat-label">恶意包数量</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ stats.safe_count }}</div>
+                <div class="stat-label">安全包数量</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-value">{{ "%.1f"|format(stats.accuracy * 100) }}%</div>
+                <div class="stat-label">检测准确率</div>
+            </div>
         </div>
         
-        <div class="package-list">
-            {% if malicious_packages %}
-                {% for pkg in malicious_packages %}
-                <div class="package-item">
-                    <div class="package-info">
-                        <div class="package-name">
-                            {{ pkg.filename }}
-                            {% if pkg.package_type == 'pypi' %}
-                                <span class="type-badge type-pypi">PyPI</span>
-                            {% elif pkg.package_type == 'npm' %}
-                                <span class="type-badge type-npm">npm</span>
-                            {% else %}
-                                <span class="type-badge type-unknown">未知</span>
-                            {% endif %}
+        <!-- 快速上手简化版 START -->
+        <div class="quickstart-guide" style="background: #fff; border-radius: 18px; box-shadow: 0 4px 20px rgba(102,126,234,0.08); margin: 30px 0; padding: 36px 32px 32px 32px;">
+            <h2 style="color: #4b6cb7; font-size: 24px; font-weight: 800; margin-bottom: 18px; text-align: center;">🚀 快速上手</h2>
+            <p style="color: #444; text-align: center; font-size: 16px; margin-bottom: 28px;">本平台帮助开发者自动检测开源组件包的安全风险，防范恶意代码，保障供应链安全。</p>
+            <div style="display: flex; flex-wrap: wrap; justify-content: space-around; gap: 30px; margin-bottom: 18px;">
+                <div style="flex: 1 1 180px; min-width: 180px; max-width: 260px; text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📦</div>
+                    <div style="font-weight: 700; color: #4b6cb7; margin-bottom: 6px;">1. 上传组件包</div>
+                    <div style="color: #666; font-size: 14px;">支持 .zip、.tar.gz、.npm 等格式，点击或拖拽上传</div>
+                </div>
+                <div style="flex: 1 1 180px; min-width: 180px; max-width: 260px; text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">🔍</div>
+                    <div style="font-weight: 700; color: #4b6cb7; margin-bottom: 6px;">2. 自动安全检测</div>
+                    <div style="color: #666; font-size: 14px;">系统自动分析包内容，检测恶意代码和安全风险</div>
+                </div>
+                <div style="flex: 1 1 180px; min-width: 180px; max-width: 260px; text-align: center;">
+                    <div style="font-size: 32px; margin-bottom: 8px;">📑</div>
+                    <div style="font-weight: 700; color: #4b6cb7; margin-bottom: 6px;">3. 查看检测报告</div>
+                    <div style="color: #666; font-size: 14px;">检测完成后生成详细报告，支持历史查询</div>
+                </div>
+            </div>
+            <div style="margin-top: 18px;">
+                <div style="font-weight: 600; color: #4b6cb7; margin-bottom: 6px;">平台主要功能：</div>
+                <ul style="color: #444; font-size: 14px; padding-left: 18px; margin-bottom: 0;">
+                    <li>多格式组件包安全检测</li>
+                    <li>AI与机器学习双重分析</li>
+                    <li>详细风险报告与历史记录</li>
+                    <li>恶意包知识库与社区上报</li>
+                </ul>
+            </div>
+        </div>
+        <!-- 快速上手简化版 END -->
+        
+        <div class="malicious-packages">
+            <div class="section-header">
+                <h2>🚨 最近检测的恶意包</h2>
+                <p>系统最近检测到的潜在恶意软件包</p>
+            </div>
+            
+            <div class="package-list">
+                {% if malicious_packages %}
+                    {% for package in malicious_packages %}
+                    <div class="package-item">
+                        <div class="package-info">
+                            <div class="package-name">{{ package.package_name }}</div>
+                            <div class="package-meta">
+                                <span>类型: {{ package.package_type }}</span>
+                                <span>大小: {{ package.file_size }}</span>
+                                <span>检测时间: {{ package.created_at }}</span>
+                            </div>
                         </div>
-                        <div class="package-meta">
-                            <span>大小: {{ pkg.file_size }}</span>
-                            <span>检测时间: {{ pkg.created_at }}</span>
-                            <span>置信度: {{ "%.1f"|format(pkg.confidence) }}%</span>
-                        </div>
-                    </div>
-                    <div>
                         <span class="risk-badge risk-high">高风险</span>
-                        <a href="{{ url_for('scan.results', scan_id=pkg.id) }}" class="more-link">查看详情</a>
                     </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; color: var(--text-secondary); padding: 40px;">
+                        <div style="font-size: 48px; margin-bottom: 15px;">🎉</div>
+                        <div>暂无恶意包检测记录</div>
+                        <div style="font-size: 12px; margin-top: 10px;">系统运行良好</div>
+                    </div>
+                {% endif %}
+            </div>
+            
+            <div style="text-align: center;">
+                {% if is_guest %}
+                <a href="{{ url_for('auth.login') }}" class="quick-guide-small-btn">
+                    <span class="guide-icon">📋</span>登录后可查看完整历史
+                </a>
+                {% else %}
+                <a href="{{ url_for('user.history') }}" class="quick-guide-small-btn">
+                    <span class="guide-icon">📋</span>查看完整历史
+                </a>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+    
+    <div class="sidebar">
+        <div class="upload-container">
+            <div class="section-header">
+                <h2>🔍 开始扫描</h2>
+                <p>上传软件包进行安全检测</p>
+            </div>
+            
+            {% if is_guest %}
+            <div class="upload-area" style="cursor:not-allowed;">
+                <div class="upload-icon">📦</div>
+                <div class="upload-text">请登录后使用检测功能</div>
+                <div class="upload-hint">
+                    支持 .tar.gz, .zip, .tgz 格式<br>
+                    最大文件大小: 100MB
                 </div>
-                {% endfor %}
+            </div>
+            <a href="{{ url_for('auth.login') }}" class="upload-btn" style="text-align:center;">登录后开始检测</a>
             {% else %}
-                <div class="empty-state">
-                    <div class="empty-icon">🔍</div>
-                    <p>暂无检测到的恶意包</p>
+            <form id="uploadForm" enctype="multipart/form-data">
+                <div class="upload-area" id="uploadArea">
+                    <div class="upload-icon">📦</div>
+                    <div class="upload-text">拖拽文件到此处或点击上传</div>
+                    <div class="upload-hint">
+                        支持 .tar.gz, .zip, .tgz 格式<br>
+                        最大文件大小: 100MB
+                    </div>
+                    <input type="file" id="fileInput" class="file-input" accept=".tar.gz,.zip,.tgz" name="file">
                 </div>
+                
+                <div style="text-align: center;">
+                    <button type="submit" class="upload-btn" id="uploadBtn" disabled>
+                        🚀 开始检测
+                    </button>
+                </div>
+            </form>
+            
+            <div class="upload-progress" id="progressContainer" style="display: none;">
+                <div class="progress-bar" id="progressBar" style="width: 0%"></div>
+                <div class="progress-text" id="progressText">准备上传...</div>
+            </div>
             {% endif %}
         </div>
         
-        <div class="center-text">
-            <a href="{{ url_for('user.history') }}" class="more-link">查看所有历史</a>
-        </div>
-    </div>
-    
-    <!-- 上传检测区域 -->
-    <div class="upload-container">
-        <div class="section-header">
-            <h2>上传组件包进行检测</h2>
-            <p>上传开源组件包进行安全检测</p>
-        </div>
-        
-        <form id="uploadForm" enctype="multipart/form-data">
-            <div class="upload-area" onclick="document.getElementById('fileInput').click()" 
-                 ondrop="dropHandler(event);" ondragover="dragOverHandler(event);" 
-                 ondragenter="dragEnterHandler(event);" ondragleave="dragLeaveHandler(event);">
-                <div class="upload-icon">📁</div>
-                <div class="upload-text">点击选择文件或拖拽文件到此处</div>
-                <div class="upload-hint">支持 .zip, .tar.gz, .jar, .npm 等格式</div>
+        <div class="recent-scans">
+            <div class="section-header">
+                <h2>📊 最近扫描</h2>
+                <p>最近的扫描记录</p>
             </div>
             
-            <input type="file" id="fileInput" name="file" class="file-input" 
-                   accept=".zip,.tar.gz,.jar,.npm,.tgz" onchange="fileSelected(event)">
-            
-            <div class="selected-file" id="selectedFile">
-                <div class="file-info">
-                    <div class="file-icon">📦</div>
-                    <div class="file-details">
-                        <h4 id="fileName">example-package.zip</h4>
-                        <p id="fileSize">2.5 MB</p>
+            <div class="scan-list">
+                {% if recent_scans %}
+                    {% for scan in recent_scans %}
+                    <div class="scan-item">
+                        <div class="scan-info">
+                            <div class="scan-name">{{ scan.package_name }}</div>
+                            <div class="scan-time">{{ scan.created_at }}</div>
+                        </div>
+                        <div class="scan-status">
+                            <span class="status-badge status-completed">已完成</span>
+                            <a href="{{ url_for('scan.results', scan_id=scan.id) }}" class="view-btn">查看</a>
+                        </div>
                     </div>
-                </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; color: var(--text-secondary); padding: 30px;">
+                        <div style="font-size: 36px; margin-bottom: 10px;">📋</div>
+                        <div>暂无扫描记录</div>
+                    </div>
+                {% endif %}
             </div>
-            
-            <div class="action-buttons">
-                <button type="button" class="btn-large btn-secondary" onclick="clearFile()">取消</button>
-                <button type="submit" class="btn-large btn-primary" id="submitBtn" disabled>开始检测</button>
+        </div>
+
+        <div class="recent-anomalies" style="background: var(--card-bg); backdrop-filter: blur(15px); padding: 30px; border-radius: 20px; box-shadow: var(--shadow-card); border: 1px solid var(--border-color); position: relative; overflow: hidden; margin-bottom: 25px;">
+            <div class="section-header">
+                <h2>🛑 用户上报的异常</h2>
+                <p>最近用户主动上报的安全异常</p>
             </div>
-            
-            <div class="loading" id="loading">
-                <div class="spinner"></div>
-                <span>正在上传文件...</span>
+            <div class="anomaly-list">
+                {% if latest_anomalies %}
+                    {% for anomaly in latest_anomalies %}
+                    <div style="background: rgba(239,68,68,0.08); border-radius: 10px; padding: 16px 18px; margin-bottom: 14px; border: 1px solid var(--danger-red);">
+                        <div style="font-weight: 600; color: #ef4444; font-size: 15px; margin-bottom: 6px;">{{ anomaly.title }}</div>
+                        <div style="color: #333; font-size: 13px; margin-bottom: 4px;">{{ anomaly.description|truncate(60) }}</div>
+                        <div style="color: #888; font-size: 12px;">上报人：{{ anomaly.username }} | 时间：{{ anomaly.created_at }}{% if anomaly.filename %} | 关联包：{{ anomaly.filename }}{% endif %}</div>
+                    </div>
+                    {% endfor %}
+                {% else %}
+                    <div style="text-align: center; color: var(--text-secondary); padding: 20px;">暂无用户上报的异常</div>
+                {% endif %}
             </div>
-        </form>
+        </div>
     </div>
 </div>
-{% endblock %}
 
-{% block extra_js %}
 <script>
-let selectedFile = null;
+document.addEventListener('DOMContentLoaded', function() {
+    const uploadArea = document.getElementById('uploadArea');
+    const fileInput = document.getElementById('fileInput');
+    const uploadBtn = document.getElementById('uploadBtn');
+    const uploadForm = document.getElementById('uploadForm');
+    const progressContainer = document.getElementById('progressContainer');
+    const progressBar = document.getElementById('progressBar');
+    const progressText = document.getElementById('progressText');
 
-// 文件选择处理
-function fileSelected(event) {
-    const file = event.target.files[0];
-    if (file) {
-        selectedFile = file;
-        displaySelectedFile(file);
-    }
-}
+    // 点击上传区域选择文件
+    uploadArea.addEventListener('click', () => {
+        fileInput.click();
+    });
 
-// 显示选中的文件
-function displaySelectedFile(file) {
-    document.getElementById('fileName').textContent = file.name;
-    document.getElementById('fileSize').textContent = formatFileSize(file.size);
-    document.getElementById('selectedFile').style.display = 'block';
-    document.getElementById('submitBtn').disabled = false;
-}
+    // 拖拽功能
+    uploadArea.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        uploadArea.classList.add('dragover');
+    });
 
-// 格式化文件大小
-function formatFileSize(bytes) {
-    if (bytes === 0) return '0 Bytes';
-    const k = 1024;
-    const sizes = ['Bytes', 'KB', 'MB', 'GB'];
-    const i = Math.floor(Math.log(bytes) / Math.log(k));
-    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
-}
+    uploadArea.addEventListener('dragleave', () => {
+        uploadArea.classList.remove('dragover');
+    });
 
-// 清除文件
-function clearFile() {
-    selectedFile = null;
-    document.getElementById('fileInput').value = '';
-    document.getElementById('selectedFile').style.display = 'none';
-    document.getElementById('submitBtn').disabled = true;
-}
-
-// 拖放处理
-function dragOverHandler(event) {
-    event.preventDefault();
-}
-
-function dragEnterHandler(event) {
-    event.preventDefault();
-    document.querySelector('.upload-area').classList.add('dragover');
-}
-
-function dragLeaveHandler(event) {
-    event.preventDefault();
-    document.querySelector('.upload-area').classList.remove('dragover');
-}
-
-function dropHandler(event) {
-    event.preventDefault();
-    document.querySelector('.upload-area').classList.remove('dragover');
-    
-    if (event.dataTransfer.items) {
-        for (let i = 0; i < event.dataTransfer.items.length; i++) {
-            if (event.dataTransfer.items[i].kind === 'file') {
-                const file = event.dataTransfer.items[i].getAsFile();
-                document.getElementById('fileInput').files = event.dataTransfer.files;
-                selectedFile = file;
-                displaySelectedFile(file);
-                break;
-            }
+    uploadArea.addEventListener('drop', (e) => {
+        e.preventDefault();
+        uploadArea.classList.remove('dragover');
+        const files = e.dataTransfer.files;
+        if (files.length > 0) {
+            fileInput.files = files;
+            handleFileSelect();
         }
-    }
-}
+    });
 
-// 表单提交
-document.getElementById('uploadForm').addEventListener('submit', function(event) {
-    event.preventDefault();
-    
-    if (!selectedFile) return;
-    
-    const formData = new FormData();
-    formData.append('file', selectedFile);
-    
-    // 显示加载状态
-    document.getElementById('loading').style.display = 'block';
-    document.getElementById('submitBtn').disabled = true;
-    
-    // 发送请求
-    fetch('/upload', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        document.getElementById('loading').style.display = 'none';
-        
-        if (data.success) {
-            // 重定向到进度页面
-            window.location.href = '/progress/' + data.scan_id;
+    // 文件选择处理
+    fileInput.addEventListener('change', handleFileSelect);
+
+    function handleFileSelect() {
+        const file = fileInput.files[0];
+        if (file) {
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = `🚀 检测 ${file.name}`;
         } else {
-            alert('上传失败: ' + data.message);
-            document.getElementById('submitBtn').disabled = false;
+            uploadBtn.disabled = true;
+            uploadBtn.textContent = '🚀 开始检测';
         }
-    })
-    .catch(error => {
-        document.getElementById('loading').style.display = 'none';
-        document.getElementById('submitBtn').disabled = false;
-        alert('上传出错: ' + error);
+    }
+
+    // 表单提交
+    uploadForm.addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const file = fileInput.files[0];
+        if (!file) return;
+
+        // 显示进度条
+        progressContainer.style.display = 'block';
+        uploadBtn.disabled = true;
+        uploadBtn.textContent = '⏳ 检测中...';
+
+        const formData = new FormData();
+        formData.append('file', file);
+
+        try {
+            const response = await fetch('/upload', {
+                method: 'POST',
+                body: formData
+            });
+
+            if (response.ok) {
+                const result = await response.json();
+                if (result.success) {
+                    progressBar.style.width = '100%';
+                    progressText.textContent = '检测完成！正在跳转...';
+                    setTimeout(() => {
+                        window.location.href = `/results/${result.scan_id}`;
+                    }, 1000);
+                } else {
+                    throw new Error(result.message || '检测失败');
+                }
+            } else {
+                throw new Error('网络错误');
+            }
+        } catch (error) {
+            progressText.textContent = `错误: ${error.message}`;
+            uploadBtn.disabled = false;
+            uploadBtn.textContent = '🚀 重新检测';
+        }
     });
 });
 </script>

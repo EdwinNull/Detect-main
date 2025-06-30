@@ -1,13 +1,33 @@
 import os
-import numpy as np
-import xgboost as xgb
-import joblib
-import sqlite3
 import json
+import sqlite3
+import hashlib
+import zipfile
+import tarfile
+import tempfile
+import shutil
+from datetime import datetime
+from pathlib import Path
+import requests
+import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
+from flask import current_app, g
+import pandas as pd
+import numpy as np
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.model_selection import cross_val_score, train_test_split
-from sklearn.metrics import accuracy_score, precision_score, recall_score, f1_score
-from config import Config
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+import pickle
+import joblib
+from xgboost import XGBClassifier
+import warnings
+warnings.filterwarnings('ignore')
+
+# 导入配置
+from config.config import Config
+from app.utils.helpers import safe_json_loads
 
 class SecurityClassifier:
     def __init__(self, model_type='xgboost'):
@@ -120,7 +140,7 @@ class SecurityClassifier:
         y = []
         for features, risk_level in data:
             try:
-                feature_dict = json.loads(features)
+                feature_dict = safe_json_loads(features)
                 # 确保特征向量的长度正确
                 feature_vector = []
                 for feature in self.feature_names:

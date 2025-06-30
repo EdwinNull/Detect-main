@@ -2,62 +2,198 @@
 
 {% block title %}扫描 - 开源组件包安全检测平台{% endblock %}
 
-{% block content %}
-<div class="scan-container" style="background: white; padding: 30px; border-radius: 10px; box-shadow: 0 4px 20px rgba(0,0,0,0.1);">
-    <h2 style="margin-bottom: 20px; color: #667eea;">安全扫描</h2>
-    
-    <p style="margin-bottom: 25px; font-size: 16px; line-height: 1.6;">
-        上传你的组件包，系统将自动进行安全检测，识别潜在的恶意代码和风险。
-    </p>
-    
-    <form id="uploadForm" enctype="multipart/form-data">
-        <div style="margin-bottom: 20px;">
-            <label for="file" style="display: block; margin-bottom: 8px; font-weight: 500;">选择要扫描的文件</label>
-            <input type="file" id="file" name="file" required style="display: block; width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px;">
-            <div style="font-size: 13px; color: #666; margin-top: 6px;">支持 .zip, .tar.gz, .whl, .jar, .tgz, .npm 等格式</div>
-        </div>
-        
-        <button type="submit" class="btn btn-primary" style="width: 100%;">开始扫描</button>
-    </form>
+{% block extra_css %}
+<style>
+    .scan-container {
+        max-width: 800px;
+        margin: 40px auto;
+        background: var(--card-bg);
+        padding: 40px;
+        border-radius: 16px;
+        border: 1px solid var(--border-color);
+        box-shadow: var(--shadow-card);
+    }
+    .scan-tabs {
+        display: flex;
+        border-bottom: 2px solid var(--border-color);
+        margin-bottom: 30px;
+    }
+    .tab-link {
+        padding: 15px 25px;
+        cursor: pointer;
+        border: none;
+        background: transparent;
+        color: var(--text-secondary);
+        font-size: 16px;
+        font-weight: 600;
+        transition: all 0.3s ease;
+        border-bottom: 3px solid transparent;
+    }
+    .tab-link.active {
+        color: var(--text-primary);
+        border-bottom-color: var(--secondary-blue);
+    }
+    .tab-content {
+        display: none;
+    }
+    .tab-content.active {
+        display: block;
+    }
+</style>
+{% endblock %}
 
-    <div id="progressContainer" style="display: none; margin-top: 20px;">
-        <div class="progress">
-            <div class="progress-bar" role="progressbar" style="width: 0%;" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100">0%</div>
+{% block content %}
+<div class="scan-container">
+    <div class="scan-tabs">
+        <button class="tab-link active" data-tab="upload">
+            <span class="nav-icon">📁</span> 上传文件扫描
+        </button>
+        <button class="tab-link" data-tab="crawl">
+            <span class="nav-icon">🌐</span> 在线抓取扫描
+        </button>
+    </div>
+
+    <!-- 上传文件 -->
+    <div id="upload" class="tab-content active">
+        <p style="margin-bottom: 25px; font-size: 16px; line-height: 1.6;">
+            上传你的组件包，系统将自动进行安全检测，识别潜在的恶意代码和风险。
+        </p>
+        <form id="uploadForm" enctype="multipart/form-data">
+            <div class="form-group">
+                <label for="file" class="form-label">选择要扫描的文件</label>
+                <input type="file" id="file" name="file" required class="form-control">
+                <div style="font-size: 13px; color: #666; margin-top: 6px;">支持 .zip, .tar.gz, .whl, .jar, .tgz 等格式</div>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">开始扫描</button>
+        </form>
+    </div>
+
+    <!-- 在线抓取 -->
+    <div id="crawl" class="tab-content">
+        <p style="margin-bottom: 25px; font-size: 16px; line-height: 1.6;">
+            输入包名和版本号，系统将从官方源（PyPI, npm）抓取并进行安全检测。
+        </p>
+        <form id="crawlForm">
+            <div class="form-group">
+                <label for="pkg_name" class="form-label">包名称</label>
+                <input type="text" id="pkg_name" name="pkg_name" class="form-control" placeholder="例如: requests, express" required>
+            </div>
+            <div class="form-group">
+                <label for="pkg_version" class="form-label">包版本</label>
+                <input type="text" id="pkg_version" name="pkg_version" class="form-control" placeholder="例如: 2.26.0, latest" value="latest" required>
+            </div>
+            <div class="form-group">
+                <label for="pkg_type" class="form-label">包类型</label>
+                <select id="pkg_type" name="pkg_type" class="form-control">
+                    <option value="pypi">PyPI (Python)</option>
+                    <option value="npm">npm (JavaScript)</option>
+                </select>
+            </div>
+            <button type="submit" class="btn btn-primary" style="width: 100%;">抓取并扫描</button>
+        </form>
+        <div style="margin-top: 30px; text-align: center;">
+            <button id="fetchHotPackagesBtn" class="btn btn-success" style="width: 80%; font-size: 16px;">
+                🚀 抓取热门开源包（PyPI & npm 各5个）
+            </button>
         </div>
-        <p id="statusText" style="margin-top: 10px; text-align: center;"></p>
     </div>
 </div>
 
 <script>
-document.getElementById('uploadForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    
-    var formData = new FormData();
-    var fileInput = document.getElementById('file');
-    formData.append('file', fileInput.files[0]);
-    
-    // 显示进度条
-    document.getElementById('progressContainer').style.display = 'block';
-    var progressBar = document.querySelector('.progress-bar');
-    var statusText = document.getElementById('statusText');
-    
-    fetch('/upload', {
-        method: 'POST',
-        body: formData
-    })
-    .then(response => response.json())
-    .then(data => {
-        if (data.success) {
-            statusText.textContent = data.message;
-            // 重定向到进度页面
-            window.location.href = '/progress/' + data.scan_id;
-        } else {
-            statusText.textContent = data.error || '上传失败';
-        }
-    })
-    .catch(error => {
-        console.error('Error:', error);
-        statusText.textContent = '上传失败: ' + error.message;
+document.addEventListener('DOMContentLoaded', function() {
+    // Tab切换逻辑
+    const tabLinks = document.querySelectorAll('.tab-link');
+    const tabContents = document.querySelectorAll('.tab-content');
+
+    tabLinks.forEach(link => {
+        link.addEventListener('click', () => {
+            tabLinks.forEach(l => l.classList.remove('active'));
+            link.classList.add('active');
+            
+            const tabId = link.getAttribute('data-tab');
+            tabContents.forEach(content => {
+                content.id === tabId ? content.classList.add('active') : content.classList.remove('active');
+            });
+        });
+    });
+
+    // 上传表单提交
+    document.getElementById('uploadForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData();
+        const fileInput = document.getElementById('file');
+        formData.append('file', fileInput.files[0]);
+        
+        // 此处可以添加进度条等UI反馈
+        
+        fetch('/upload', {
+            method: 'POST',
+            body: formData
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/progress/' + data.scan_id;
+            } else {
+                alert(data.error || '上传失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('上传失败: ' + error.message);
+        });
+    });
+
+    // 抓取表单提交
+    document.getElementById('crawlForm').addEventListener('submit', function(e) {
+        e.preventDefault();
+        const formData = new FormData(this);
+        const params = new URLSearchParams(formData);
+
+        // 此处可以添加加载中的UI反馈
+        
+        fetch('/crawl_and_scan', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/x-www-form-urlencoded' },
+            body: params
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                window.location.href = '/progress/' + data.scan_id;
+            } else {
+                alert(data.error || '抓取失败');
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('抓取失败: ' + error.message);
+        });
+    });
+
+    // 抓取热门开源包按钮事件
+    document.getElementById('fetchHotPackagesBtn').addEventListener('click', function() {
+        if (!confirm('确定要自动抓取PyPI和npm的前5个热门包到本地吗？')) return;
+        this.disabled = true;
+        this.textContent = '正在抓取，请稍候...';
+        fetch('/fetch_hot_packages', {
+            method: 'POST'
+        })
+        .then(response => response.json())
+        .then(data => {
+            this.disabled = false;
+            this.textContent = '🚀 抓取热门开源包（PyPI & npm 各5个）';
+            if (data.success) {
+                alert('抓取成功！已下载 ' + data.count + ' 个包到本地。');
+            } else {
+                alert(data.error || '抓取失败');
+            }
+        })
+        .catch(error => {
+            this.disabled = false;
+            this.textContent = '🚀 抓取热门开源包（PyPI & npm 各5个）';
+            alert('抓取失败: ' + error.message);
+        });
     });
 });
 </script>

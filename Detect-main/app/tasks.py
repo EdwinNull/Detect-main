@@ -1,12 +1,35 @@
-import time
-import json
 import os
-import threading
+import json
 import sqlite3
+import hashlib
+import zipfile
+import tarfile
+import tempfile
+import shutil
+from datetime import datetime
+from pathlib import Path
+import requests
+import time
+import threading
+from concurrent.futures import ThreadPoolExecutor, as_completed
+import logging
+from flask import current_app, g
+import pandas as pd
+import numpy as np
+from sklearn.ensemble import RandomForestClassifier
+from sklearn.model_selection import train_test_split
+from sklearn.metrics import classification_report, confusion_matrix
+import pickle
+import joblib
+from xgboost import XGBClassifier
+import warnings
+warnings.filterwarnings('ignore')
+
+# 导入配置
+from config.config import Config
 from app.services.extractor import FeatureExtractor
 from app.services.classifier import SecurityClassifier
 from app.services.analyzer import DeepSeekAnalyzer
-from config import Config
 from app.services.csv_feature_extractor import CsvFeatureExtractor
 
 # 初始化服务实例
@@ -160,19 +183,32 @@ def background_scan(scan_id, file_path, user_id):
         conn = sqlite3.connect(Config.DATABASE_PATH)
         cursor = conn.cursor()
         
+        # 预处理代码片段，确保是字符串
+        snippet_data = llm_result.get('malicious_code_snippet', '')
+        if isinstance(snippet_data, list):
+            snippet_to_save = '\n'.join(snippet_data)
+        else:
+            snippet_to_save = str(snippet_data)
+
         cursor.execute('''
             UPDATE scan_records 
             SET scan_status = ?, risk_level = ?, confidence = ?, 
-                xgboost_result = ?, llm_result = ?, risk_explanation = ?, scan_time = ?
+                xgboost_result = ?, llm_result = ?, risk_explanation = ?, scan_time = ?,
+                malicious_code_snippet = ?, code_location = ?, malicious_action = ?,
+                technical_details = ?
             WHERE id = ?
         ''', (
             'completed',
-            model_result.get('risk_level', 'unknown'),  # 优先用XGBoost模型的risk_level
+            llm_result.get('risk_level', 'unknown'),
             final_confidence,
             json.dumps(model_result),
             json.dumps(llm_result),
-            llm_result.get('analysis', '分析失败'),
+            llm_result.get('risk_explanation', '分析失败'),
             scan_time,
+            snippet_to_save,
+            llm_result.get('code_location', ''),
+            llm_result.get('malicious_action', ''),
+            llm_result.get('technical_details', ''),
             scan_id
         ))
         
