@@ -21,7 +21,42 @@ from sklearn.model_selection import train_test_split
 from sklearn.metrics import classification_report, confusion_matrix
 import pickle
 import joblib
-from xgboost import XGBClassifier
+# 尝试导入XGBoost，如果失败则使用备用方案
+try:
+    from xgboost import XGBClassifier
+    XGBOOST_AVAILABLE = True
+    print("XGBoost库加载成功")
+except ImportError as e:
+    print(f"XGBoost库加载失败: {e}")
+    print("将使用RandomForest作为备用方案")
+    XGBOOST_AVAILABLE = False
+    # 创建一个XGBClassifier的替代类
+    class XGBClassifier:
+        def __init__(self, **kwargs):
+            from sklearn.ensemble import RandomForestClassifier
+            print("使用RandomForest替代XGBoost")
+            # 将XGBoost参数映射到RandomForest参数
+            rf_params = {
+                'n_estimators': kwargs.get('n_estimators', 200),
+                'max_depth': kwargs.get('max_depth', 8),
+                'random_state': kwargs.get('random_state', 42),
+                'class_weight': 'balanced'
+            }
+            self._model = RandomForestClassifier(**rf_params)
+
+        def fit(self, X, y):
+            return self._model.fit(X, y)
+
+        def predict(self, X):
+            return self._model.predict(X)
+
+        def predict_proba(self, X):
+            return self._model.predict_proba(X)
+
+        def save_model(self, path):
+            import joblib
+            joblib.dump(self._model, path)
+
 import warnings
 warnings.filterwarnings('ignore')
 
@@ -34,8 +69,11 @@ class SecurityClassifier:
         self.model_type = model_type
         self.model = None
         self.is_trained = False
-        # 修正模型文件名拼接
-        self.model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'models', f'{model_type}.pkl')
+        # 修正模型文件名拼接 - 处理不同的模型文件命名
+        if model_type == 'xgboost':
+            self.model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'models', 'xgboost_model.pkl')
+        else:
+            self.model_path = os.path.join(os.path.dirname(os.path.dirname(os.path.dirname(__file__))), 'models', f'{model_type}.pkl')
         
         # 基于CSV数据的特征名称列表 (对应npm_feature_extracted.csv的列名)
         self.feature_names = [
@@ -83,26 +121,46 @@ class SecurityClassifier:
         if self.model_type in ['js_model', 'py_model', 'cross_language', 'xgboost']:
             if os.path.exists(self.model_path):
                 try:
-                    self.model = joblib.load(self.model_path)
-                    self.is_trained = True
-                    print(f"成功加载{self.model_type}模型: {self.model_path}")
-                    print(f"[DEBUG] 加载的模型对象: {self.model}")
-                    return
+                    # 使用warnings过滤器忽略XGBoost兼容性警告
+                    import warnings
+                    with warnings.catch_warnings():
+                        warnings.filterwarnings("ignore", category=UserWarning)
+                        self.model = joblib.load(self.model_path)
+
+                    # 检查模型是否正确加载
+                    if hasattr(self.model, 'predict'):
+                        self.is_trained = True
+                        print(f"成功加载{self.model_type}模型: {self.model_path}")
+                        print(f"[DEBUG] 模型类型: {type(self.model)}")
+                        return
+                    else:
+                        print(f"加载的模型对象无效: {type(self.model)}")
                 except Exception as e:
                     print(f"加载模型失败: {str(e)}")
+                    print(f"[DEBUG] 详细错误信息: {repr(e)}")
             else:
                 print(f"模型文件不存在: {self.model_path}")
-            print(f"无法找到{self.model_type}模型文件，使用默认XGBoost模型")
-            import xgboost as xgb
-            self.model = xgb.XGBClassifier(
-                n_estimators=200,
-                max_depth=8,
-                learning_rate=0.05,
-                subsample=0.8,
-                colsample_bytree=0.8,
-                scale_pos_weight=2.0,
-                random_state=42
-            )
+            print(f"无法找到{self.model_type}模型文件，使用默认模型")
+            if XGBOOST_AVAILABLE:
+                print("使用XGBoost模型")
+                self.model = XGBClassifier(
+                    n_estimators=200,
+                    max_depth=8,
+                    learning_rate=0.05,
+                    subsample=0.8,
+                    colsample_bytree=0.8,
+                    scale_pos_weight=2.0,
+                    random_state=42
+                )
+            else:
+                print("使用RandomForest备用模型")
+                from sklearn.ensemble import RandomForestClassifier
+                self.model = RandomForestClassifier(
+                    n_estimators=200,
+                    max_depth=8,
+                    class_weight='balanced',
+                    random_state=42
+                )
         else:
             from sklearn.ensemble import RandomForestClassifier
             self.model = RandomForestClassifier(

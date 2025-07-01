@@ -1,0 +1,13 @@
+{
+  "scan_id": 141,
+  "filename": "ztasimb-1.0.0.tar.gz",
+  "file_size": 1797,
+  "file_hash": "48f036dc8ecb77e8644c164e38b1c054",
+  "risk_level": 0.5,
+  "confidence": "completed",
+  "xgboost_result": {},
+  "llm_result": {},
+  "risk_explanation": "npm",
+  "scan_time": null,
+  "created_at": null
+}

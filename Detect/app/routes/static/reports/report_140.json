@@ -1,0 +1,13 @@
+{
+  "scan_id": 140,
+  "filename": "activedevbadge-0.39.tar.gz",
+  "file_size": 1650,
+  "file_hash": "f8990a138a66bb41d963bed4eafabdde",
+  "risk_level": 0.5,
+  "confidence": "completed",
+  "xgboost_result": {},
+  "llm_result": {},
+  "risk_explanation": "npm",
+  "scan_time": null,
+  "created_at": null
+}

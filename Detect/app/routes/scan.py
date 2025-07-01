@@ -62,9 +62,9 @@ def upload_file():
         conn = sqlite3.connect(Config.DATABASE_PATH)
         cursor = conn.cursor()
         cursor.execute('''
-            INSERT INTO scan_records (user_id, filename, file_size, file_hash, scan_status, package_type)
-            VALUES (?, ?, ?, ?, ?, ?)
-        ''', (session['user_id'], filename, file_size, file_hash, 'pending', package_type))
+            INSERT INTO scan_records (user_id, filename, file_size, file_hash, scan_status, package_type, file_path)
+            VALUES (?, ?, ?, ?, ?, ?, ?)
+        ''', (session['user_id'], filename, file_size, file_hash, 'pending', package_type, file_path))
         scan_id = cursor.lastrowid
         conn.commit()
         conn.close()
@@ -122,6 +122,11 @@ def results(scan_id):
     scan_record = ScanRecord.get_by_id(scan_id)
     if not scan_record:
         flash('扫描记录不存在')
+        return redirect(url_for('user.index'))
+
+    # 检查用户权限（管理员可以查看所有记录，普通用户只能查看自己的）
+    if session.get('role') != 'admin' and scan_record.user_id != session.get('user_id'):
+        flash('无权访问此扫描记录')
         return redirect(url_for('user.index'))
     
     # 获取特征数据

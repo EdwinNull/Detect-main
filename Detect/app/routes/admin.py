@@ -105,86 +105,106 @@ def sample_management():
 @admin_bp.route('/samples/upload', methods=['POST'])
 @admin_required
 def upload_samples():
-    if 'samples' not in request.files:
-        return jsonify({'error': '没有选择文件'}), 400
-    
-    files = request.files.getlist('samples')
-    malware_status = request.form.get('sample_type', 'benign')  # 仅保留恶意/良性状态
-    description = request.form.get('description', '')
-    
-    if not files:
-        return jsonify({'error': '没有选择文件'}), 400
-    
-    # 创建样本存储目录
-    samples_dir = os.path.join(Config.UPLOAD_FOLDER, 'samples')
-    os.makedirs(samples_dir, exist_ok=True)
-    
-    conn = sqlite3.connect(Config.DATABASE_PATH)
-    cursor = conn.cursor()
-    
-    success_count = 0
-    error_count = 0
-    error_messages = []
-    
-    for file in files:
-        if file.filename.endswith('.tar.gz') or file.filename.endswith('.zip') or file.filename.endswith('.whl') or file.filename.endswith('.tgz'):
-            try:
-                # 保存文件
-                filename = secure_filename(file.filename)
-                file_path = os.path.join(samples_dir, filename)
-                file.save(file_path)
-                
-                # 计算文件哈希
-                file_hash = hashlib.sha256(open(file_path, 'rb').read()).hexdigest()
-                
-                # 自动检测包类型
-                package_type = detect_package_type(file_path)
-                
-                # 提取特征
-                extractor = FeatureExtractor()
-                features = extractor.extract_features(file_path)
-                
-                # 保存到数据库
-                cursor.execute('''
-                    INSERT INTO samples (filename, file_path, file_size, file_hash, type, package_type, description, features)
-                    VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-                ''', (
-                    filename,
-                    file_path,
-                    os.path.getsize(file_path),
-                    file_hash,
-                    malware_status,  # 恶意/良性状态
-                    package_type,    # 包类型（pypi/npm等）
-                    description,
-                    json.dumps(features)
-                ))
-                success_count += 1
-                
-            except Exception as e:
+    try:
+        if 'samples' not in request.files:
+            return jsonify({'error': '没有选择文件'}), 400
+
+        files = request.files.getlist('samples')
+        malware_status = request.form.get('sample_type', 'benign')  # 仅保留恶意/良性状态
+        description = request.form.get('description', '')
+
+        if not files:
+            return jsonify({'error': '没有选择文件'}), 400
+
+        # 创建样本存储目录
+        samples_dir = os.path.join(Config.UPLOAD_FOLDER, 'samples')
+        os.makedirs(samples_dir, exist_ok=True)
+
+        conn = sqlite3.connect(Config.DATABASE_PATH)
+        cursor = conn.cursor()
+
+        success_count = 0
+        error_count = 0
+        error_messages = []
+
+        for file in files:
+            if file.filename == '':
+                continue
+
+            if file.filename.endswith('.tar.gz') or file.filename.endswith('.zip') or file.filename.endswith('.whl') or file.filename.endswith('.tgz'):
+                file_path = None
+                try:
+                    # 保存文件
+                    filename = secure_filename(file.filename)
+                    file_path = os.path.join(samples_dir, filename)
+                    file.save(file_path)
+
+                    # 计算文件哈希
+                    with open(file_path, 'rb') as f:
+                        file_hash = hashlib.sha256(f.read()).hexdigest()
+
+                    # 自动检测包类型
+                    package_type = detect_package_type(file_path)
+
+                    # 提取特征
+                    extractor = FeatureExtractor()
+                    features = extractor.extract_features(file_path)
+
+                    # 确保features是字典类型
+                    if not isinstance(features, dict):
+                        features = {}
+
+                    # 保存到数据库
+                    cursor.execute('''
+                        INSERT INTO samples (filename, file_path, file_size, file_hash, type, package_type, description, features)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                    ''', (
+                        filename,
+                        file_path,
+                        os.path.getsize(file_path),
+                        file_hash,
+                        malware_status,  # 恶意/良性状态
+                        package_type,    # 包类型（pypi/npm等）
+                        description,
+                        json.dumps(features)
+                    ))
+                    success_count += 1
+
+                except Exception as e:
+                    error_count += 1
+                    error_messages.append(f"文件 {file.filename} 处理失败: {str(e)}")
+                    # 如果文件已保存，删除它
+                    if file_path and os.path.exists(file_path):
+                        try:
+                            os.remove(file_path)
+                        except:
+                            pass
+            else:
                 error_count += 1
-                error_messages.append(f"文件 {file.filename} 处理失败: {str(e)}")
-                # 如果文件已保存，删除它
-                if os.path.exists(file_path):
-                    os.remove(file_path)
+                error_messages.append(f"文件 {file.filename} 格式不支持")
+
+        conn.commit()
+        conn.close()
+
+        if success_count > 0:
+            return jsonify({
+                'success': True,
+                'message': f'成功上传 {success_count} 个文件' + (f'，{error_count} 个文件失败' if error_count > 0 else ''),
+                'errors': error_messages if error_count > 0 else None
+            })
         else:
-            error_count += 1
-            error_messages.append(f"文件 {file.filename} 格式不支持")
-    
-    conn.commit()
-    conn.close()
-    
-    if success_count > 0:
-        return jsonify({
-            'success': True,
-            'message': f'成功上传 {success_count} 个文件' + (f'，{error_count} 个文件失败' if error_count > 0 else ''),
-            'errors': error_messages if error_count > 0 else None
-        })
-    else:
+            return jsonify({
+                'success': False,
+                'error': '所有文件上传失败',
+                'errors': error_messages
+            }), 400
+
+    except Exception as e:
+        # 全局异常处理，确保总是返回JSON
         return jsonify({
             'success': False,
-            'error': '所有文件上传失败',
-            'errors': error_messages
-        }), 400
+            'error': f'上传过程中发生错误: {str(e)}'
+        }), 500
 
 @admin_bp.route('/samples/delete', methods=['POST'])
 @admin_required

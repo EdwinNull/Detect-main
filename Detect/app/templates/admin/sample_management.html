@@ -168,16 +168,33 @@ document.addEventListener('DOMContentLoaded', function() {
             method: 'POST',
             body: formData
         })
-        .then(response => response.json())
+        .then(response => {
+            // 检查响应状态
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+
+            // 检查响应内容类型
+            const contentType = response.headers.get('content-type');
+            if (!contentType || !contentType.includes('application/json')) {
+                return response.text().then(text => {
+                    throw new Error(`服务器返回非JSON响应: ${text.substring(0, 200)}...`);
+                });
+            }
+
+            return response.json();
+        })
         .then(data => {
             if (data.success) {
+                alert(data.message || '上传成功');
                 window.location.reload();
             } else {
                 alert(data.error || '上传失败');
             }
         })
         .catch(error => {
-            alert('上传出错: ' + error);
+            console.error('上传错误:', error);
+            alert('上传出错: ' + error.message);
         })
         .finally(() => {
             uploadButton.disabled = false;

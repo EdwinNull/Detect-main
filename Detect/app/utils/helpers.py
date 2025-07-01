@@ -43,29 +43,102 @@ def detect_package_type(file_path):
     """检测包类型"""
     if not os.path.exists(file_path):
         return 'unknown'
-    
+
     filename = os.path.basename(file_path).lower()
-    
-    if filename.endswith('.whl') or filename.endswith('.py'):
+
+    # 直接通过文件扩展名判断的情况
+    if filename.endswith('.whl'):
         return 'pypi'
-    elif filename.endswith('.tgz') or filename.endswith('.tar.gz'):
-        return 'npm'
     elif filename.endswith('.jar'):
         return 'maven'
+    elif filename.endswith('.gem'):
+        return 'rubygems'
+
+    # 需要检查内容的压缩包格式
     elif filename.endswith('.zip'):
-        # 检查zip文件内容来判断类型
-        try:
-            with zipfile.ZipFile(file_path, 'r') as zip_ref:
-                file_list = zip_ref.namelist()
-                if any(name.endswith('.py') for name in file_list):
-                    return 'pypi'
-                elif any(name.endswith('.js') or 'package.json' in name for name in file_list):
-                    return 'npm'
-                else:
-                    return 'zip'
-        except:
-            return 'zip'
+        return _detect_zip_package_type(file_path)
+    elif filename.endswith('.tgz') or filename.endswith('.tar.gz') or filename.endswith('.tar'):
+        return _detect_tar_package_type(file_path)
+    elif filename.endswith('.py'):
+        return 'pypi'
     else:
+        return 'unknown'
+
+def _detect_zip_package_type(file_path):
+    """检测ZIP文件的包类型"""
+    try:
+        with zipfile.ZipFile(file_path, 'r') as zip_ref:
+            file_list = zip_ref.namelist()
+
+            # 检查PyPI包特征文件
+            pypi_markers = ['setup.py', 'pyproject.toml', 'setup.cfg', 'PKG-INFO', 'METADATA']
+            if any(any(name.endswith(marker) for name in file_list) for marker in pypi_markers):
+                return 'pypi'
+
+            # 检查npm包特征文件
+            if any(name.endswith('package.json') for name in file_list):
+                return 'npm'
+
+            # 检查Maven包特征文件
+            if any(name.endswith('pom.xml') or name.endswith('build.gradle') for name in file_list):
+                return 'maven'
+
+            # 检查Ruby包特征文件
+            if any(name.endswith('.gemspec') for name in file_list):
+                return 'rubygems'
+
+            # 根据文件内容推测
+            if any(name.endswith('.py') for name in file_list):
+                return 'pypi'
+            elif any(name.endswith('.js') or name.endswith('.ts') for name in file_list):
+                return 'npm'
+            elif any(name.endswith('.java') for name in file_list):
+                return 'maven'
+            elif any(name.endswith('.rb') for name in file_list):
+                return 'rubygems'
+
+            return 'zip'
+    except Exception as e:
+        print(f"检测ZIP包类型时出错: {e}")
+        return 'zip'
+
+def _detect_tar_package_type(file_path):
+    """检测TAR文件的包类型"""
+    try:
+        import tarfile
+        with tarfile.open(file_path, 'r:*') as tar:
+            names = tar.getnames()
+
+            # 检查PyPI包特征文件
+            pypi_markers = ['setup.py', 'pyproject.toml', 'setup.cfg', 'PKG-INFO', 'METADATA']
+            if any(any(name.endswith(marker) for name in names) for marker in pypi_markers):
+                return 'pypi'
+
+            # 检查npm包特征文件
+            if any(name.endswith('package.json') for name in names):
+                return 'npm'
+
+            # 检查Maven包特征文件
+            if any(name.endswith('pom.xml') or name.endswith('build.gradle') for name in names):
+                return 'maven'
+
+            # 检查Ruby包特征文件
+            if any(name.endswith('.gemspec') for name in names):
+                return 'rubygems'
+
+            # 根据文件内容推测
+            if any(name.endswith('.py') for name in names):
+                return 'pypi'
+            elif any(name.endswith('.js') or name.endswith('.ts') for name in names):
+                return 'npm'
+            elif any(name.endswith('.java') for name in names):
+                return 'maven'
+            elif any(name.endswith('.rb') for name in names):
+                return 'rubygems'
+
+            return 'unknown'
+    except Exception as e:
+        print(f"检测TAR包类型时出错: {e}")
         return 'unknown'
 
 def safe_json_loads(data):
